@@ -80,7 +80,7 @@ const Login = () => {
         >
           <View style={styles.heroSection}>
             <View style={styles.heroBadge}>
-              <AppText title="RideShare" textColor={AppColors.WHITE} textFontWeight />
+              <AppText title="Ride-Share" textColor={AppColors.WHITE} textFontWeight />
             </View>
             <AppText
               title="Welcome back"
@@ -126,7 +126,7 @@ const Login = () => {
               title={'Login'}
               bgColor={AppColors.ThemeColor}
               handlePress={handleLogin}
-              buttoWidth={82}
+              buttoWidth={75}
             />
             <View style={styles.divider}>
               <View style={styles.dividerLine} />

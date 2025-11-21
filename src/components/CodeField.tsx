@@ -45,7 +45,7 @@ const FieldCode: React.FC = () => {
                                 style={{
                                     justifyContent: 'center',
                                     alignItems: 'center',
-                                    marginHorizontal: 6,
+                                    marginLeft: 10,
                                 }}>
                                 <Text
                                     style={{
@@ -74,10 +74,10 @@ const styles = StyleSheet.create({
     codeFieldRoot: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        width: responsiveWidth(90),
+        width: responsiveWidth(80),
     },
     cellRoot: {
-        width: responsiveWidth(18),
+        width: responsiveWidth(15),
         height: responsiveHeight(8),
         justifyContent: 'center',
         alignItems: 'center',

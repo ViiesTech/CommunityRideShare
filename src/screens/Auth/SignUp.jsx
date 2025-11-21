@@ -152,7 +152,7 @@ const SignUp = () => {
               title={'Create account'}
               bgColor={AppColors.ThemeColor}
               handlePress={handleSignUp}
-              buttoWidth={82}
+              buttoWidth={75}
             />
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
