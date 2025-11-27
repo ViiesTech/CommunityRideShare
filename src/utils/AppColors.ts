@@ -13,6 +13,7 @@ type Colors = {
     TEXTCOLOR: string
     rightArrowCOlor: string
     ThemeColor: string
+    ThemeBlue: string
     GRAY: string
     Yellow: string
     lightRed: string
@@ -64,6 +65,7 @@ const AppColors: Colors = {
     rightArrowCOlor: "#3D56F0",
     btnColor: '#242E42',
     ThemeColor: '#0887FC',
+    ThemeBlue: '#0887FC',
     Yellow: '#FDC700',
     light_yellow: '#FFF8EC',
     lightRed: '#FFD7D7',

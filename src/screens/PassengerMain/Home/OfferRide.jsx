@@ -129,7 +129,7 @@ const OfferRide = () => {
       >
         <View style={styles.headerRow}>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <View style={styles.backChevron} />
+            <SVGXml icon={AppIcons.arrowLeft} width={20} height={20} />
           </TouchableOpacity>
           <View style={{ flex: 1, alignItems: 'center' }}>
             <AppText title="Offer a Ride" textColor={AppColors.BLACK} textFontWeight textSize={2.1} />
@@ -342,14 +342,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 4 },
-  },
-  backChevron: {
-    width: 12,
-    height: 12,
-    borderLeftWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: AppColors.BLACK,
-    transform: [{ rotate: '45deg' }],
   },
   formCard: {
     backgroundColor: AppColors.WHITE,

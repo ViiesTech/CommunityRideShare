@@ -1,12 +1,16 @@
-/* eslint-disable react-native/no-inline-styles */
 import React from 'react';
+import { useNavigation } from '@react-navigation/native';
 import {
+  Image,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import AppText from '../../../components/AppText';
 import AppTextInput from '../../../components/AppTextInput';
 import SVGXml from '../../../components/SVGXML';
@@ -30,110 +34,171 @@ const stopData = [
   },
 ];
 
+const mapBackground = require('../../../assets/images/map_bg.png');
+
 const RiderDetail = () => {
   const navigation = useNavigation();
+  const [stops, setStops] = React.useState(
+    stopData.map(stop => ({ ...stop, value: stop.label })),
+  );
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      navigation.navigate('WaitingConfirmation');
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [navigation]);
+
+  const handleStopChange = (index, text) => {
+    setStops(prev => {
+      const next = [...prev];
+      next[index] = { ...next[index], value: text };
+      return next;
+    });
+  };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <View style={styles.backChevron} />
-        </TouchableOpacity>
-        <View style={styles.headerTitleWrap}>
-          <AppText title="Ride detail" textColor={AppColors.DARKGRAY} textFontWeight textSize={1.6} />
-        </View>
-        <TouchableOpacity style={styles.menuButton}>
-          <View style={styles.menuDot} />
-          <View style={styles.menuDot} />
-          <View style={styles.menuDot} />
-        </TouchableOpacity>
-      </View>
+    <ImageBackground
+      source={mapBackground}
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          style={styles.flexOne}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? responsiveHeight(2) : responsiveHeight(1)}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            bounces={false}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.screenContent}>
+              <View style={styles.topSection}>
+                <View style={styles.headerRow}>
+                  <TouchableOpacity style={[styles.headerButton, styles.backButton]} onPress={() => navigation.goBack()}>
+                    <SVGXml icon={AppIcons.arrowLeft} width={20} height={20} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.headerButton, styles.menuButton]}>
+                    <SVGXml icon={AppIcons.menuHamburger} width={20} height={20} />
+                  </TouchableOpacity>
+                </View>
 
-      <View style={styles.mapCanvas}>
-        <View style={styles.routeCard}>
-          <View style={styles.routeIndicatorColumn}>
-            <View style={styles.indicatorTop} />
-            <View style={styles.indicatorLine} />
-            <View style={styles.indicatorBottom} />
-          </View>
-          <View style={styles.routeStops}>
-            {stopData.map(stop => (
-              <View key={stop.label} style={styles.stopInputWrap}>
-                <AppTextInput
-                  inputPlaceHolder={stop.label}
-                  value={stop.label}
-                  containerBg={AppColors.WHITE}
-                  borderRadius={18}
-                  borderColor="#E8ECF5"
-                  borderWidth={1}
-                  inputWidth={60}
-                  textAlign="left"
-                  placeholderTextColor={AppColors.BLACK}
-                  rightIcon={(
-                    <TouchableOpacity style={[styles.stopIcon, { backgroundColor: `${stop.accent}1A` }] }>
-                      <SVGXml icon={stop.icon} width={16} height={16} />
-                    </TouchableOpacity>
-                  )}
-                />
+                <View style={styles.routeCard}>
+                  <View style={styles.routeIndicatorColumn}>
+                    <View style={styles.indicatorTop} />
+                    <View style={styles.indicatorLine} />
+                    <View style={styles.indicatorBottom} />
+                  </View>
+                  <View style={styles.routeStops}>
+                    {stops.map((stop, index) => (
+                      <View key={stop.label} style={styles.stopInputWrap}>
+                        <AppTextInput
+                          inputPlaceHolder={stop.label}
+                          value={stop.value}
+                          onChangeText={text => handleStopChange(index, text)}
+                          containerBg={AppColors.WHITE}
+                          borderRadius={18}
+                          borderColor="#E8ECF5"
+                          borderWidth={1}
+                          inputWidth={50}
+                          textAlign="left"
+                          placeholderTextColor={AppColors.BLACK}
+                          rightIcon={(
+                            <View style={styles.stopActions}>
+                              <TouchableOpacity style={[styles.stopIcon, styles.searchIcon]}>
+                                <SVGXml icon={AppIcons.search} width={16} height={16} />
+                              </TouchableOpacity>
+                              <TouchableOpacity style={[styles.stopIcon, styles.stopIconBordered, { backgroundColor: `${stop.accent}1A`, borderColor: stop.accent }] }>
+                                <SVGXml icon={stop.icon} width={16} height={16} />
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                </View>
               </View>
-            ))}
-          </View>
-        </View>
 
-        <View style={styles.mapRoute}>
-          <View style={styles.routeStartGlow} />
-          <View style={styles.routeStart} />
-          <View style={styles.routeLineMain} />
-          <View style={styles.routeTurn} />
-          <View style={styles.routeArrowShell}>
-            <View style={styles.routeArrow} />
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.driverCard}>
-        <View style={styles.driverHeader}>
-          <View style={styles.avatarPlaceholder}>
-            <AppText title="LA" textColor={AppColors.WHITE} textFontWeight />
-          </View>
-          <View style={{ flex: 1, gap: responsiveHeight(0.3) }}>
-            <AppText title="Leilani Angel" textColor={AppColors.WHITE} textFontWeight textSize={1.8} />
-            <AppText title="(Level 3 Rider)" textColor="rgba(255,255,255,0.85)" textSize={1.2} />
-            <AppText title="leilaniangel@gmail.com" textColor={AppColors.WHITE} textSize={1.25} />
-            <AppText title="Phone : +12 345 6789" textColor={AppColors.WHITE} textSize={1.25} />
-          </View>
-          <View style={styles.driverActions}>
-            <TouchableOpacity style={styles.actionBubble}>
-              <AppText title="Call" textColor={AppColors.ThemeColor} textFontWeight textSize={1.1} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBubble}>
-              <AppText title="Chat" textColor={AppColors.ThemeColor} textFontWeight textSize={1.1} />
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.driverInfoRow}>
-          <AppText title="Car Type" textColor={AppColors.GRAY} textSize={1.3} />
-          <AppText title="Honda HRV" textColor={AppColors.BLACK} textFontWeight textSize={1.4} />
-        </View>
-        <View style={styles.driverInfoRow}>
-          <AppText title="Car Seat" textColor={AppColors.GRAY} textSize={1.3} />
-          <AppText title="3/4 Seats Available" textColor={AppColors.BLACK} textFontWeight textSize={1.4} />
-        </View>
-        <View style={styles.driverInfoRow}>
-          <AppText title="Time & Date" textColor={AppColors.GRAY} textSize={1.3} />
-          <AppText title="Mon, Jan 15, 9:30 AM" textColor={AppColors.BLACK} textFontWeight textSize={1.4} />
-        </View>
-      </View>
-    </SafeAreaView>
+              <View style={styles.driverCard}>
+            <View style={styles.cardHeader}>
+              <View style={styles.profileColumn}>
+                <Image source={{ uri: 'https://i.pravatar.cc/150?img=32' }} style={styles.avatar} />
+                <View style={styles.ratingRow}>
+                  <View style={styles.starCircle}>
+                    <SVGXml icon={AppIcons.starFilled} width={18} height={18} />
+                  </View>
+                  <AppText title="5.0" textColor={AppColors.WHITE} textFontWeight textSize={1.5} />
+                </View>
+              </View>
+              <View style={styles.headerContent}>
+                <View style={styles.headerTop}>
+                  <View style={styles.nameRow}>
+                    <AppText title="Leilani Angel" textColor={AppColors.WHITE} textFontWeight textSize={1.8} />
+                    <AppText title="(Level 3 Rider)" textColor="rgba(255,255,255,0.85)" textSize={1.2} />
+                  </View>
+                  <View style={styles.contactActions}>
+                    <TouchableOpacity style={styles.contactButton}>
+                      <SVGXml icon={AppIcons.phoneSolid} width={16} height={16} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.contactButton}>
+                      <SVGXml icon={AppIcons.messageSolid} width={16} height={16} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                <AppText title="leilaniangel@gmail.com" textColor={AppColors.WHITE} textSize={1.3} />
+                <AppText title="Phone : +12 345 6789" textColor={AppColors.WHITE} textSize={1.3} />
+              </View>
+            </View>
+            <View style={styles.driverInfoRow}>
+              <AppText title="Car Type" textColor={AppColors.GRAY} textSize={1.3} />
+              <AppText title="Honda HRV" textColor={AppColors.BLACK} textFontWeight textSize={1.4} />
+            </View>
+            <View style={styles.driverInfoRow}>
+              <AppText title="Car Seat" textColor={AppColors.GRAY} textSize={1.3} />
+              <AppText title="3/4 Seats Available" textColor={AppColors.BLACK} textFontWeight textSize={1.4} />
+            </View>
+            <View style={styles.driverInfoRow}>
+              <AppText title="Time & Date" textColor={AppColors.GRAY} textSize={1.3} />
+              <AppText title="Mon, Jan 15, 9:30 AM" textColor={AppColors.BLACK} textFontWeight textSize={1.4} />
+            </View>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+  },
+  flexOne: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
-    backgroundColor: '#F2F6FD',
+    backgroundColor: 'transparent',
     paddingHorizontal: responsiveWidth(5),
     paddingVertical: responsiveHeight(2),
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: responsiveHeight(2.5),
+  },
+  screenContent: {
+    flexGrow: 1,
+    justifyContent: 'space-between',
+    gap: responsiveHeight(2),
+  },
+  topSection: {
+    gap: responsiveHeight(2),
   },
   headerRow: {
     flexDirection: 'row',
@@ -141,31 +206,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: responsiveHeight(2),
   },
-  backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: AppColors.WHITE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  backChevron: {
-    width: 12,
-    height: 12,
-    borderLeftWidth: 2,
-    borderBottomWidth: 2,
-    borderColor: AppColors.BLACK,
-    transform: [{ rotate: '45deg' }],
-  },
-  headerTitleWrap: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  menuButton: {
+  headerButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -178,18 +219,9 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 4 },
   },
-  menuDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#1C2C56',
+  backButton: {
   },
-  mapCanvas: {
-    flex: 1,
-    borderRadius: 28,
-    backgroundColor: '#E4ECFB',
-    overflow: 'hidden',
-    padding: responsiveWidth(4),
+  menuButton: {
   },
   routeCard: {
     flexDirection: 'row',
@@ -202,10 +234,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
+    marginBottom: responsiveHeight(2.5),
   },
   routeIndicatorColumn: {
     alignItems: 'center',
-    gap: responsiveHeight(0.8),
+    gap: 0,
   },
   indicatorTop: {
     width: 10,
@@ -239,64 +272,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mapRoute: {
-    flex: 1,
-    marginTop: responsiveHeight(3),
+  stopActions: {
+    flexDirection: 'row',
+    gap: responsiveWidth(1.5),
   },
-  routeStartGlow: {
-    position: 'absolute',
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(30, 182, 109, 0.14)',
-    top: responsiveHeight(4),
-    right: responsiveWidth(18),
+  searchIcon: {
+    backgroundColor: '#E7EEFF',
   },
-  routeStart: {
-    position: 'absolute',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1FB768',
-    top: responsiveHeight(5.5),
-    right: responsiveWidth(22),
-    borderWidth: 4,
-    borderColor: AppColors.WHITE,
-  },
-  routeLineMain: {
-    position: 'absolute',
-    width: 3,
-    height: responsiveHeight(20),
-    backgroundColor: '#1FB768',
-    left: responsiveWidth(35),
-    top: responsiveHeight(10),
-  },
-  routeTurn: {
-    position: 'absolute',
-    height: 3,
-    width: responsiveWidth(30),
-    backgroundColor: '#1FB768',
-    top: responsiveHeight(30),
-    left: responsiveWidth(35),
-  },
-  routeArrowShell: {
-    position: 'absolute',
-    bottom: responsiveHeight(1.5),
-    left: responsiveWidth(10),
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#1FB768',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  routeArrow: {
-    width: 18,
-    height: 18,
-    borderLeftWidth: 3,
-    borderBottomWidth: 3,
-    borderColor: AppColors.WHITE,
-    transform: [{ rotate: '-45deg' }],
+  stopIconBordered: {
+    borderWidth: 1,
   },
   driverCard: {
     marginTop: responsiveHeight(2.5),
@@ -309,32 +293,75 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 8 },
   },
-  driverHeader: {
-    flexDirection: 'row',
+  cardHeader: {
     backgroundColor: '#0D7CF4',
-    borderRadius: 20,
-    padding: responsiveWidth(3),
-    alignItems: 'center',
+    borderRadius: 0,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: responsiveWidth(4),
+    paddingVertical: responsiveHeight(2.2),
+    flexDirection: 'row',
     gap: responsiveWidth(3),
+    alignItems: 'flex-start',
+    marginHorizontal: -responsiveWidth(4),
+    marginTop: -responsiveWidth(4),
   },
-  avatarPlaceholder: {
+  profileColumn: {
+    alignItems: 'center',
+    gap: responsiveHeight(0.6),
+  },
+  avatar: {
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: responsiveWidth(1),
+  },
+  starCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  driverActions: {
+  headerContent: {
+    flex: 1,
+    gap: responsiveHeight(0.3),
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    gap: responsiveWidth(2),
+    position: 'relative',
+    paddingRight: responsiveWidth(8),
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: responsiveWidth(1.5),
+    flexShrink: 1,
+  },
+  contactActions: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
     gap: responsiveHeight(1),
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
-  actionBubble: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: AppColors.WHITE,
+  contactButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: AppColors.BLACK,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
   driverInfoRow: {
     flexDirection: 'row',

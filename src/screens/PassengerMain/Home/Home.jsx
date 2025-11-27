@@ -1,6 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import React from 'react';
 import {
+  Alert,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,7 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from '../../../utils/Responsive_Dimensions';
+import SideMenuDrawer from '../../../components/SideMenuDrawer';
 
 const actionCards = [
   {
@@ -34,6 +36,7 @@ const actionCards = [
     description: 'Search for rides offered by community members.',
     icon: AppIcons.search,
     badgeColor: '#E8EEFF',
+    route: 'Search',
   },
   {
     id: 'myRides',
@@ -42,6 +45,7 @@ const actionCards = [
     description: "Manage rides you're offering or joined.",
     icon: AppIcons.calendar,
     badgeColor: '#F3E9FF',
+    route: 'Calendar',
   },
 ];
 
@@ -53,13 +57,39 @@ const activityStats = [
 
 const Home = () => {
   const navigation = useNavigation();
+  const [isMenuOpen, setMenuOpen] = React.useState(false);
+
+  const handleMenuAction = action => {
+    setMenuOpen(false);
+    switch (action) {
+      case 'myRide':
+        navigation.navigate('Calendar');
+        break;
+      case 'editProfile':
+        navigation.navigate('EditProfile');
+        break;
+      case 'settings':
+        navigation.navigate('Settings');
+        break;
+      case 'help':
+        navigation.navigate('DocumentInfo', { type: 'help' });
+        break;
+      case 'logout':
+        Alert.alert('Logout', 'You have been logged out of the demo experience.');
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.heroBackground}>
+      <View style={{ flex: 1 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.heroBackground}>
           <View style={styles.heroAccent} />
           <View style={styles.welcomeCard}>
             <View style={styles.cardContent}>
@@ -79,7 +109,11 @@ const Home = () => {
                 />
               </View>
             </View>
-            <TouchableOpacity activeOpacity={0.8} style={styles.menuButton}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.menuButton}
+              onPress={() => setMenuOpen(true)}
+            >
               <View style={styles.menuLine} />
               <View style={styles.menuLine} />
               <View style={styles.menuLine} />
@@ -174,7 +208,14 @@ const Home = () => {
             ))}
           </View>
         </View>
-      </ScrollView>
+        </ScrollView>
+
+        <SideMenuDrawer
+          visible={isMenuOpen}
+          onClose={() => setMenuOpen(false)}
+          onSelect={handleMenuAction}
+        />
+      </View>
     </SafeAreaView>
   );
 };
