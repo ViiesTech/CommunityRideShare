@@ -9,6 +9,7 @@ import SignUp from '../screens/Auth/SignUp';
 import ForgetPassword from '../screens/Auth/ForgetPassword';
 import EnterPassCode from '../screens/Auth/EnterPassCode';
 import NewPassword from '../screens/Auth/NewPassword';
+import JoinCommunity from '../screens/Auth/JoinCommunity';
 
 const Stack = createStackNavigator();
 const Auth = () => {
@@ -25,6 +26,7 @@ const Auth = () => {
         <Stack.Screen name="ForgetPassword" component={ForgetPassword} />
         <Stack.Screen name="EnterPassCode" component={EnterPassCode} />
         <Stack.Screen name="NewPassword" component={NewPassword} />
+        <Stack.Screen name="JoinCommunity" component={JoinCommunity} />
         {/* <Stack.Screen name="SelectType" component={SelectType} /> */}
       </Stack.Navigator>
   );

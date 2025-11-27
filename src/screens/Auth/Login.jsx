@@ -55,15 +55,7 @@ const Login = () => {
   };
 
   const handleLogin = async () => {
-    const rootNav = nav.getParent();
-    if (rootNav) {
-      rootNav.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
-      return;
-    }
-    nav.navigate('Main');
+    nav.navigate('JoinCommunity');
   };
 
   return (

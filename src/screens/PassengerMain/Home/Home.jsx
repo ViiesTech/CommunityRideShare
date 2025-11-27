@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import AppColors from '../../../utils/AppColors';
 import AppText from '../../../components/AppText';
 import SVGXml from '../../../components/SVGXML';
@@ -19,7 +19,8 @@ import {
 } from '../../../utils/Responsive_Dimensions';
 import SideMenuDrawer from '../../../components/SideMenuDrawer';
 
-const actionCards = [
+
+const baseActionCards = [
   {
     id: 'offer',
     title: 'Offer a Ride',
@@ -49,15 +50,31 @@ const actionCards = [
   },
 ];
 
+const adminPanelCard = {
+  id: 'adminPanel',
+  title: 'Admin Panel',
+  subtitle: 'Manage Community',
+  description: 'No pending requests',
+  icon: AppIcons.settings_red,
+  badgeColor: '#FFCFC3',
+  route: 'AdminPanel',
+};
+
 const activityStats = [
   { id: 'members', value: '5', label: 'Members' },
   { id: 'active', value: 'Active', label: 'Members' },
   { id: 'trust', value: 'Trust-Based', label: 'Community' },
 ];
 
+
 const Home = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const [isMenuOpen, setMenuOpen] = React.useState(false);
+
+  // Check if type param is 'create' to show Admin Panel
+  const type = route?.params?.type;
+  const actionCards = type === 'create' ? [...baseActionCards, adminPanelCard] : baseActionCards;
 
   const handleMenuAction = action => {
     setMenuOpen(false);
@@ -75,7 +92,7 @@ const Home = () => {
         navigation.navigate('DocumentInfo', { type: 'help' });
         break;
       case 'logout':
-        Alert.alert('Logout', 'You have been logged out of the demo experience.');
+        navigation.navigate('Auth');
         break;
       default:
         break;

@@ -23,6 +23,7 @@ import DocumentInfo from '../screens/PassengerMain/Settings/DocumentInfo';
 import SVGXml from '../components/SVGXML';
 import { AppIcons } from '../assets/icons';
 import AppColors from '../utils/AppColors';
+import AdminPanel from './../screens/PassengerMain/AdminPanel/AdminPanel';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
@@ -30,7 +31,7 @@ const HomeStack = createStackNavigator();
 const tabIconMap = {
 	Home: AppIcons.homeTab,
 	Search: AppIcons.search,
-	Calendar: AppIcons.calendar,
+	Calendar: AppIcons.tabCalendar,
 	Chat: AppIcons.chatTab,
 	Profile: AppIcons.profileTab,
 };
@@ -61,6 +62,7 @@ const PassengerMain = () => (
 		<HomeStack.Screen name="Security" component={Security} />
 		<HomeStack.Screen name="FAQs" component={FAQs} />
 		<HomeStack.Screen name="DocumentInfo" component={DocumentInfo} />
+		<HomeStack.Screen name="AdminPanel" component={AdminPanel} />
 	</HomeStack.Navigator>
 );
 
