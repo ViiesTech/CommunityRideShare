@@ -9,7 +9,7 @@
     "start": "react-native start",
     "test": "jest",
     "cleaBuild": "cd android && ./gradlew clean && cd ..",
-    "build": "cd android && ./gradlew assembleDebug && cd .."
+    "build": "cd android && ./gradlew assembleRelease && cd .."
   },
   "dependencies": {
     "@react-native/new-app-screen": "0.82.1",

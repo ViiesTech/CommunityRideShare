@@ -14,21 +14,21 @@ import JoinCommunity from '../screens/Auth/JoinCommunity';
 const Stack = createStackNavigator();
 const Auth = () => {
   return (
-      <Stack.Navigator
-        screenOptions={{ headerShown: false }}
-        initialRouteName="Splash"
-      >
-        <Stack.Screen name="Splash" component={Splash} />
-        <Stack.Screen name="SplashFullScreen" component={SplashFullScreen} />
-        <Stack.Screen name="OnBoarding" component={OnBoarding} />
-        <Stack.Screen name="Login" component={Login} />
-        <Stack.Screen name="SignUp" component={SignUp} />
-        <Stack.Screen name="ForgetPassword" component={ForgetPassword} />
-        <Stack.Screen name="EnterPassCode" component={EnterPassCode} />
-        <Stack.Screen name="NewPassword" component={NewPassword} />
-        <Stack.Screen name="JoinCommunity" component={JoinCommunity} />
-        {/* <Stack.Screen name="SelectType" component={SelectType} /> */}
-      </Stack.Navigator>
+    <Stack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName="Splash"
+    >
+      <Stack.Screen name="Splash" component={Splash} />
+      <Stack.Screen name="SplashFullScreen" component={SplashFullScreen} />
+      <Stack.Screen name="OnBoarding" component={OnBoarding} />
+      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="SignUp" component={SignUp} />
+      <Stack.Screen name="ForgetPassword" component={ForgetPassword} />
+      <Stack.Screen name="EnterPassCode" component={EnterPassCode} />
+      <Stack.Screen name="NewPassword" component={NewPassword} />
+      <Stack.Screen name="JoinCommunity" component={JoinCommunity} />
+      {/* <Stack.Screen name="SelectType" component={SelectType} /> */}
+    </Stack.Navigator>
   );
 };
 
