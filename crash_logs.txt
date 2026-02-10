@@ -1,0 +1,53 @@
+--------- beginning of main
+02-10 23:16:09.037 10164 10164 E SoLoader: Checking /data/app missing libraries.
+02-10 23:16:09.038 10164 10164 E SoLoader: Successfully recovered from /data/app disk failure.
+02-10 23:16:09.040 10164 10164 E SoLoader: Checking /data/data missing libraries.
+02-10 23:16:09.040 10164 10164 E SoLoader: No libraries missing from unpacking so paths while recovering /data/data failure
+--------- beginning of crash
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: FATAL EXCEPTION: main
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: Process: com.communityrideshare, PID: 10164
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: com.facebook.soloader.SoLoaderDSONotFoundError: couldn't find DSO to load: libhermestooling.so
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	existing SO sources: 
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 		SoSource 0: ApplicationSoSource[DirectorySoSource[root = /data/app/~~3kgWrTDA870L0ECl5-Z8Bg==/com.communityrideshare-U0DTsT8Zwf8bJHSqVxacbQ==/lib/x86_64 flags = 0]]
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 		SoSource 1: DirectApkSoSource[root = [/data/app/~~3kgWrTDA870L0ECl5-Z8Bg==/com.communityrideshare-U0DTsT8Zwf8bJHSqVxacbQ==/base.apk!/lib/x86_64]]
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 		SoSource 2: DirectorySoSource[root = /system/lib64 flags = 3]
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 		SoSource 3: DirectorySoSource[root = /vendor/lib64 flags = 3]
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	Native lib dir: /data/app/~~3kgWrTDA870L0ECl5-Z8Bg==/com.communityrideshare-U0DTsT8Zwf8bJHSqVxacbQ==/lib/x86_64
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.soloader.SoLoader.doLoadLibraryBySoName(SoLoader.java:1216)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.soloader.SoLoader.loadLibraryBySoNameImpl(SoLoader.java:1078)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.soloader.SoLoader.loadLibraryBySoName(SoLoader.java:943)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.soloader.SoLoader.loadLibraryOnAndroid(SoLoader.java:859)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.soloader.SoLoader.loadLibrary(SoLoader.java:842)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.soloader.SoLoader.loadLibrary(SoLoader.java:812)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.react.runtime.hermes.HermesInstance.<clinit>(HermesInstance.kt:26)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost(DefaultReactHost.kt:93)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost$default(DefaultReactHost.kt:60)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.communityrideshare.MainApplication.reactHost_delegate$lambda$1(MainApplication.kt:13)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.communityrideshare.MainApplication.$r8$lambda$_3A6L_j9XE9_asaO3pxQf54WXKE(Unknown Source:0)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.communityrideshare.MainApplication$$ExternalSyntheticLambda0.invoke(D8$$SyntheticClass:0)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at kotlin.SynchronizedLazyImpl.getValue(LazyJVM.kt:83)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.communityrideshare.MainApplication.getReactHost(MainApplication.kt:12)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.react.ReactActivityDelegate.getReactHost(ReactActivityDelegate.java:108)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.react.ReactActivityDelegate.lambda$onCreate$0(ReactActivityDelegate.java:151)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.react.ReactActivityDelegate.$r8$lambda$HPdXfLmAU1y4Wc1XbwAHziPP2WA(Unknown Source:0)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.react.ReactActivityDelegate$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.systrace.Systrace.traceSection(Systrace.kt:35)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.react.ReactActivityDelegate.onCreate(ReactActivityDelegate.java:131)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.facebook.react.ReactActivity.onCreate(ReactActivity.java:61)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.app.Activity.performCreate(Activity.java:8305)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.app.Activity.performCreate(Activity.java:8284)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.app.Instrumentation.callActivityOnCreate(Instrumentation.java:1417)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.app.ActivityThread.performLaunchActivity(ActivityThread.java:3626)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.app.ActivityThread.handleLaunchActivity(ActivityThread.java:3782)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.app.servertransaction.LaunchActivityItem.execute(LaunchActivityItem.java:101)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.app.servertransaction.TransactionExecutor.executeCallbacks(TransactionExecutor.java:135)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.app.servertransaction.TransactionExecutor.execute(TransactionExecutor.java:95)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:2307)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:106)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:201)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:288)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at android.app.ActivityThread.main(ActivityThread.java:7872)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:548)
+02-10 23:16:09.043 10164 10164 E AndroidRuntime: 	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:936)
