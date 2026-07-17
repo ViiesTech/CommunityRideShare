@@ -1,13 +1,8 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -21,151 +16,151 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from '../../utils/Responsive_Dimensions';
-import { AppImages } from '../../assets/images';
+import Wrapper from '../../components/Wrapper';
+import AppLogo from '../../components/AppLogo';
+import { useResendResetOtpMutation, useVerifyResetOtpMutation } from '../../redux/api/apiSlice';
+import { showToast } from '../../utils/toast';
 
 const EnterPassCode = () => {
+  const [verifyResetOtp, { isLoading }] = useVerifyResetOtpMutation();
+  const [resendResetOtp, { isLoading: isResending }] = useResendResetOtpMutation();
   const nav = useNavigation();
   const route = useRoute();
   const email = route.params?.email || '';
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const cardTranslate = useRef(new Animated.Value(25)).current;
+  const [timer, setTimer] = useState(60);
+  const [code, setCode] = useState('');
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(cardOpacity, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.spring(cardTranslate, {
-        toValue: 0,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [cardOpacity, cardTranslate]);
+    let interval;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
 
-  const handleVerifyCode = () => {
-    nav.navigate('NewPassword', { email });
+  const handleVerifyCode = async () => {
+    try {
+      const response = await verifyResetOtp({ email, otp: code }).unwrap();
+      if (response.success) {
+        showToast(
+          'success',
+          'Congratulations',
+          response?.message || 'OTP verified. Now set a new password.',
+          () => { nav.replace('NewPassword', { email }) });
+      } else {
+        showToast(
+          'error',
+          response?.errorCode || 'Failed to verify code',
+          response?.message || 'Something went wrong'
+        );
+      }
+    } catch (err) {
+      showToast(
+        'error',
+        err?.data?.errorCode || 'Failed to verify code',
+        err?.data?.message || 'Something went wrong'
+      );
+    }
+  };
+
+  const handleResendCode = async () => {
+    try {
+      const response = await resendResetOtp({ email, type: 'reset' }).unwrap();
+      if (response.success) {
+        showToast(
+          'success',
+          'Code Resent',
+          'A new passcode has been sent to your email.',
+          () => { setTimer(60) }
+        );
+      } else {
+        showToast(
+          'error',
+          response?.errorCode || 'Failed to resend code',
+          response?.message || 'Something went wrong'
+        );
+      }
+    } catch (err) {
+      showToast(
+        'error',
+        err?.data?.errorCode || 'Failed to resend code',
+        err?.data?.message || 'Something went wrong'
+      );
+    }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={AppColors.WHITE} />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <Wrapper style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        bounces={false}
+        showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          bounces={false}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.heroSection}>
-            <View style={styles.heroBadge}>
-              <AppText
-                title="Verify identity"
-                textColor={AppColors.WHITE}
-                textFontWeight
-              />
-            </View>
+        <View style={styles.card}>
+          <AppLogo style={{ marginVertical: responsiveHeight(5) }} />
+          <AppText title="Enter Pass Code" textSize={4} textFontWeight textAlignment='center' />
+          <AppText title="Please enter the passcode we sent you." textSize={1.6} lineHeight={2} textFontWeight textColor={AppColors.darkGray} textAlignment='center' />
+          <FieldCode value={code} setValue={setCode} />
+          <AppButton
+            title={'Verify Pass Code'}
+            bgColor={AppColors.BLACK}
+            handlePress={handleVerifyCode}
+            loading={isLoading}
+          />
+        </View>
+        {timer > 0 ? (
+          <View style={styles.footer}>
             <AppText
-              title="Enter the passcode"
-              textColor={AppColors.BLACK}
-              textSize={3}
-              textFontWeight
-            />
-            <AppText
-              title={`We sent a 4-digit code to ${
-                email || 'your email address'
-              }.`}
+              title={`Resend code in 00:${timer < 10 ? `0${timer}` : timer}`}
               textColor={AppColors.DARKGRAY}
-              textSize={1.7}
-              lineHeight={2.4}
+              textSize={1.7} textFontWeight
             />
-            <Image source={AppImages.roundedImg} style={styles.heroImage} />
           </View>
-          <Animated.View
-            style={[
-              styles.card,
-              {
-                opacity: cardOpacity,
-                transform: [{ translateY: cardTranslate }],
-              },
-            ]}
-          >
-            <FieldCode />
-            <View style={styles.resendRow}>
-              <AppText
-                title="Didn’t receive it?"
-                textColor={AppColors.DARKGRAY}
-                textSize={1.5}
-              />
-              <TouchableOpacity onPress={() => null}>
-                <AppText
-                  title="Resend"
-                  textColor={AppColors.ThemeColor}
-                  textFontWeight
-                />
-              </TouchableOpacity>
-            </View>
-            <AppButton
-              title={'Verify code'}
-              bgColor={AppColors.ThemeColor}
-              handlePress={handleVerifyCode}
-              buttoWidth={76}
+        ) : (
+          <View style={styles.footer}>
+            <AppText
+              title="Didn’t receive it?"
+              textColor={AppColors.DARKGRAY}
+              textSize={1.5}
             />
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            <TouchableOpacity
+              onPress={handleResendCode}
+              disabled={isResending || timer > 0}
+              style={{ opacity: isResending || timer > 0 ? 0.6 : 1 }}
+            >
+              <AppText
+                underline
+                textFontWeight
+                title={isResending ? 'Resending...' : 'Resend'}
+                textColor={AppColors.BLACK}
+                textSize={1.7}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: AppColors.WHITE,
+
   },
   scrollContent: {
-    paddingHorizontal: responsiveWidth(6),
-    paddingVertical: responsiveHeight(4),
-    gap: responsiveHeight(3),
+    flexGrow: 1,
   },
-  heroSection: {
-    backgroundColor: AppColors.lightGreenColor,
-    borderRadius: 32,
-    padding: responsiveWidth(6),
-    gap: responsiveHeight(1.5),
-  },
-  heroBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: responsiveWidth(4),
-    paddingVertical: responsiveHeight(0.6),
-    borderRadius: 16,
-    backgroundColor: AppColors.green,
-  },
-  heroImage: {
-    width: '100%',
-    height: responsiveHeight(18),
-    borderRadius: 24,
-    resizeMode: 'contain',
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    marginVertical: 'auto'
   },
   card: {
-    backgroundColor: AppColors.WHITE,
-    borderRadius: 28,
-    padding: responsiveWidth(6),
-    gap: responsiveHeight(2.5),
-    shadowColor: '#050A30',
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 15 },
-    elevation: 8,
-  },
-  resendRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: responsiveHeight(1.5),
   },
 });
 

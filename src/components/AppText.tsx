@@ -16,6 +16,9 @@ type textProps = {
   numberOfLines?:any;
   borderBottomWidth?:any;
   borderBottomColor?:any;
+  marginTop?:any;
+  marginBottom?:any;
+  underline?:boolean;
 };
 
 const AppText = ({
@@ -30,6 +33,9 @@ const AppText = ({
   numberOfLines,
   borderBottomWidth,
   borderBottomColor,
+  marginTop,
+  marginBottom,
+  underline,
 }: textProps) => {
   return (
     <Text
@@ -47,6 +53,9 @@ const AppText = ({
         lineHeight: responsiveHeight(lineHeight),
         borderBottomWidth: borderBottomWidth,
         borderBottomColor: borderBottomColor,
+        marginTop: marginTop ? responsiveHeight(marginTop) : undefined,
+        marginBottom: marginBottom ? responsiveHeight(marginBottom) : undefined,
+        textDecorationLine: underline ? 'underline' : 'none',
       }}>
       {title}
     </Text>

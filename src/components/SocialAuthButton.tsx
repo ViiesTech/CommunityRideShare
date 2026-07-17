@@ -26,7 +26,6 @@ const SocialAuthButton = ({
 }: Props) => {
   return (
     <TouchableOpacity
-      activeOpacity={0.85}
       style={[
         styles.button,
         { backgroundColor: backgroundColor, borderColor: borderColor },
@@ -34,7 +33,7 @@ const SocialAuthButton = ({
       onPress={onPress}
     >
       {icon}
-      <AppText title={label} textColor={textColor} textFontWeight />
+      <AppText title={label} textColor={textColor} textFontWeight textSize={1.8} />
     </TouchableOpacity>
   );
 };
@@ -46,8 +45,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: responsiveWidth(2.5),
     paddingVertical: responsiveHeight(1.5),
-    width: '100%',
-    borderRadius: 14,
+    width: responsiveWidth(),
+    borderRadius: responsiveWidth(2),
     borderWidth: 1,
   },
 });

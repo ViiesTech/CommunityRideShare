@@ -22,169 +22,98 @@ import {
   responsiveWidth,
 } from '../../utils/Responsive_Dimensions';
 import { AppImages } from '../../assets/images';
+import Wrapper from '../../components/Wrapper';
+import AppLogo from '../../components/AppLogo';
+import { showToast } from '../../utils/toast';
+import { useForgetPasswordMutation } from '../../redux/api/apiSlice';
 
 const ForgetPassword = () => {
   const [email, setEmail] = useState('');
   const nav = useNavigation();
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const cardTranslate = useRef(new Animated.Value(25)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(cardOpacity, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.spring(cardTranslate, {
-        toValue: 0,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [cardOpacity, cardTranslate]);
+  const [forgetPassword, { isLoading }] = useForgetPasswordMutation();
 
   const validateEmail = value => {
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
     return emailRegex.test(value);
   };
 
-  const handleSendCode = () => {
-    if (!email.trim()) {
-      Alert.alert('Missing email', 'Please enter your email address.');
-      return;
-    }
+  const handleSendCode = async () => {
+    try {
+      if (!email.trim()) {
+        showToast('error', 'Missing email', 'Please enter your email address.');
+        return;
+      }
 
-    if (!validateEmail(email)) {
-      Alert.alert('Invalid email', 'Please enter a valid email address.');
-      return;
-    }
+      if (!validateEmail(email)) {
+        showToast('error', 'Invalid email', 'Please enter a valid email address.');
+        return;
+      }
 
-    nav.navigate('EnterPassCode', { email });
+      const response = await forgetPassword({ email }).unwrap();
+      if (response.success) {
+        showToast(
+          'success',
+          'Congratulations',
+          response?.message || 'A 4-digit password reset OTP has been sent to your email address.',
+          () => { nav.replace('EnterPassCode', { email }) });
+      } else {
+        showToast(
+          'error',
+          response?.errorCode || 'Failed to send code',
+          response?.message || 'Something went wrong'
+        );
+      }
+    } catch (err) {
+      showToast(
+        'error',
+        err?.data?.errorCode || 'Failed to send code',
+        err?.data?.message || 'Something went wrong'
+      );
+    }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={AppColors.WHITE} />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <Wrapper style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        bounces={false}
+        showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          bounces={false}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.heroSection}>
-            <View style={styles.heroBadge}>
-              <AppText title="Reset access" textColor={AppColors.WHITE} textFontWeight />
-            </View>
-            <AppText
-              title="Forgot your password?"
-              textColor={AppColors.BLACK}
-              textSize={3}
-              textFontWeight
-            />
-            <AppText
-              title="We’ll send a secure passcode to help you get back in."
-              textColor={AppColors.DARKGRAY}
-              textSize={1.7}
-              lineHeight={2.4}
-            />
-            <Image source={AppImages.roundedImg} style={styles.heroImage} />
-          </View>
-          <Animated.View
-            style={[styles.card, { opacity: cardOpacity, transform: [{ translateY: cardTranslate }] }]}
-          >
-            <AppText
-              title="Email address"
-              textColor={AppColors.GRAY}
-              textSize={1.5}
-            />
-            <AppTextInput
-              inputPlaceHolder={'you@example.com'}
-              inputWidth={80}
-              value={email}
-              onChangeText={setEmail}
-              containerBg={AppColors.inputBgColor}
-              borderWidth={0}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <View style={styles.helperBox}>
-              <View style={styles.helperDot} />
-              <AppText
-                title="Used recently with your RideShare account"
-                textColor={AppColors.DARKGRAY}
-                textSize={1.4}
-              />
-            </View>
-            <AppButton
-              title={'Send code'}
-              bgColor={AppColors.ThemeColor}
-              handlePress={handleSendCode}
-              buttoWidth={76}
-            />
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <View style={styles.card}>
+          <AppLogo style={{ marginVertical: responsiveHeight(5) }} />
+          <AppText title="Forgot Password" textSize={4} textFontWeight textAlignment='center' />
+          <AppText title="Please enter your email below. We will send you a passcode." textSize={1.6} lineHeight={2} textFontWeight textColor={AppColors.darkGray} textAlignment='center' />
+          <AppTextInput
+            inputPlaceHolder={'Email Address'}
+            inputWidth={84}
+            value={email}
+            onChangeText={setEmail}
+            containerBg={AppColors.inputBgColor}
+            borderWidth={0}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <AppButton
+            title={'Send code'}
+            bgColor={AppColors.BLACK}
+            handlePress={handleSendCode}
+            loading={isLoading}
+          />
+        </View>
+      </ScrollView>
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: AppColors.WHITE,
+
   },
   scrollContent: {
-    paddingHorizontal: responsiveWidth(6),
-    paddingVertical: responsiveHeight(4),
-    gap: responsiveHeight(3),
-  },
-  heroSection: {
-    backgroundColor: AppColors.lightThemeColor,
-    borderRadius: 32,
-    padding: responsiveWidth(6),
-    gap: responsiveHeight(1.5),
-  },
-  heroBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: responsiveWidth(4),
-    paddingVertical: responsiveHeight(0.6),
-    borderRadius: 16,
-    backgroundColor: AppColors.ThemeColor,
-  },
-  heroImage: {
-    width: '100%',
-    height: responsiveHeight(18),
-    borderRadius: 24,
-    resizeMode: 'contain',
+
   },
   card: {
-    backgroundColor: AppColors.WHITE,
-    borderRadius: 28,
-    padding: responsiveWidth(6),
-    gap: responsiveHeight(2),
-    shadowColor: '#050A30',
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 15 },
-    elevation: 8,
-  },
-  helperBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: responsiveWidth(2),
-    backgroundColor: AppColors.inputBgColor,
-    padding: responsiveWidth(3),
-    borderRadius: 16,
-  },
-  helperDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: AppColors.ThemeColor,
+    gap: responsiveHeight(1.5),
   },
 });
 

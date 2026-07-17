@@ -2,12 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -23,191 +18,161 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from '../../utils/Responsive_Dimensions';
-import { AppImages } from '../../assets/images';
 import SocialAuthButton from '../../components/SocialAuthButton';
+import Wrapper from '../../components/Wrapper';
+import AppLogo from '../../components/AppLogo';
+import Feather from 'react-native-vector-icons/Feather';
+import { showToast } from '../../utils/toast';
+import { useDispatch } from 'react-redux';
+import { setAuthToken, setCommunityId, setCommunityRole, setUser } from '../../redux/slices/authSlice';
+import { useLoginMutation } from '../../redux/api/apiSlice';
 
 const Login = () => {
+  const dispatch = useDispatch();
   const [state, setState] = useState({
     email: '',
     password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const nav = useNavigation();
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const cardTranslate = useRef(new Animated.Value(20)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(cardOpacity, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.spring(cardTranslate, {
-        toValue: 0,
-        friction: 6,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [cardOpacity, cardTranslate]);
+  const [login, { isLoading, error }] = useLoginMutation();
 
   const onChangeText = (key, value) => {
     setState(prev => ({ ...prev, [key]: value }));
   };
 
   const handleLogin = async () => {
-    nav.navigate('JoinCommunity');
+    try {
+      if (Object.values(state).some(v => !v)) {
+        return showToast('error', 'Login Failed', 'All fields are required');
+      }
+      const response = await login(state).unwrap();
+      if (response.success) {
+        showToast(
+          'success',
+          'Congratulations',
+          response?.message || 'Login successful.',
+          () => {
+            const user = response.data.user
+            const token = response.data.token
+            const communityRole = user.communityRole || null
+            const communityId = user.communityId || null
+            dispatch(setCommunityRole(communityRole))
+            dispatch(setCommunityId(communityId))
+            dispatch(setAuthToken(token));
+            dispatch(setUser(user))
+          });
+      } else {
+        showToast(
+          'error',
+          response?.errorCode || 'Login Failed',
+          response?.message || 'Something went wrong'
+        );
+      }
+    } catch (err) {
+      if (err?.data?.errorCode === 'USER_NOT_VERIFIED') {
+        showToast(
+          'info',
+          'Verification Required',
+          err?.data?.message || 'Please verify your email address.',
+          () => nav.navigate('VerifyAccount', { email: state.email })
+        );
+      } else {
+        showToast(
+          'error',
+          err?.data?.errorCode || 'Login Failed',
+          err?.data?.message || 'Something went wrong'
+        );
+      }
+    }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={AppColors.WHITE} />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          bounces={false}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.heroSection}>
-            <View style={styles.heroBadge}>
-              <AppText title="Ride-Share" textColor={AppColors.WHITE} textFontWeight />
-            </View>
-            <AppText
-              title="Welcome back"
-              textColor={AppColors.BLACK}
-              textSize={3.5}
-              textFontWeight
-            />
-            <AppText
-              title="Log in to keep your neighborhood rides in sync."
-              textColor={AppColors.DARKGRAY}
-              textSize={1.7}
-              lineHeight={2.5}
-            />
-            <Image source={AppImages.roundedImg} style={styles.heroImage} />
-          </View>
-          <Animated.View
-            style={[styles.card, { opacity: cardOpacity, transform: [{ translateY: cardTranslate }] }]}
+    <Wrapper style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        bounces={false}
+        showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <AppLogo style={{ marginVertical: responsiveHeight(5) }} />
+        <View style={styles.card}>
+          <AppText title="Login to Continue" textSize={4} textFontWeight textAlignment='center' />
+          <AppTextInput
+            inputPlaceHolder={'Email address'}
+            inputWidth={84}
+            value={state.email}
+            onChangeText={text => onChangeText('email', text)}
+            containerBg={AppColors.inputBgColor}
+            borderWidth={0}
+          />
+          <AppTextInput
+            inputPlaceHolder={'Password'}
+            inputWidth={75}
+            secureTextEntry={!showPassword}
+            value={state.password}
+            onChangeText={text => onChangeText('password', text)}
+            containerBg={AppColors.inputBgColor}
+            borderWidth={0}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Feather name={showPassword ? 'eye' : 'eye-off'} size={responsiveWidth(6)} color={AppColors.DARKGRAY} />
+              </TouchableOpacity>
+            }
+          />
+          <TouchableOpacity
+            style={styles.forgotButton}
+            onPress={() => nav.navigate('ForgetPassword')}
           >
-            <AppTextInput
-              inputPlaceHolder={'Email address'}
-              inputWidth={80}
-              value={state.email}
-              onChangeText={text => onChangeText('email', text)}
-              containerBg={AppColors.inputBgColor}
-              borderWidth={0}
+            <AppText textSize={1.5} title={'Forgot password?'} textColor={AppColors.BLACK} textFontWeight underline />
+          </TouchableOpacity>
+          <AppButton
+            title={'Login'}
+            bgColor={AppColors.BLACK}
+            handlePress={handleLogin}
+            loading={isLoading}
+          />
+          <AppText textFontWeight textSize={1.7} title="Or Login With" textColor={AppColors.darkGray} textAlignment='center' lineHeight={3} />
+          <View style={styles.socialWrapper}>
+            <SocialAuthButton
+              label="Continue with Facebook"
+              backgroundColor={AppColors.BLUE}
+              borderColor={AppColors.BLUE}
+              textColor={AppColors.WHITE}
+              icon={<SVGXml icon={AppIcons.facebook_white} width={16} height={16} />}
             />
-            <AppTextInput
-              inputPlaceHolder={'Password'}
-              inputWidth={80}
-              secureTextEntry={true}
-              value={state.password}
-              onChangeText={text => onChangeText('password', text)}
-              containerBg={AppColors.inputBgColor}
-              borderWidth={0}
+            <SocialAuthButton
+              label="Continue with Google"
+              icon={<SVGXml icon={AppIcons.google_black} width={16} height={16} />}
             />
-            <TouchableOpacity
-              style={styles.forgotButton}
-              onPress={() => nav.navigate('ForgetPassword')}
-            >
-              <AppText title={'Forgot password?'} textColor={AppColors.ThemeColor} textFontWeight />
-            </TouchableOpacity>
-            <AppButton
-              title={'Login'}
-              bgColor={AppColors.ThemeColor}
-              handlePress={handleLogin}
-              buttoWidth={75}
-            />
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <AppText title="or" textColor={AppColors.GRAY} />
-              <View style={styles.dividerLine} />
-            </View>
-            <View style={styles.socialWrapper}>
-              <SocialAuthButton
-                label="Continue with Facebook"
-                backgroundColor={AppColors.BLUE}
-                borderColor={AppColors.BLUE}
-                textColor={AppColors.WHITE}
-                icon={<SVGXml icon={AppIcons.facebook_white} width={15} height={15} />}
-              />
-              <SocialAuthButton
-                label="Continue with Google"
-                icon={<SVGXml icon={AppIcons.google_black} width={15} height={15} />}
-              />
-            </View>
-          </Animated.View>
-          <View style={styles.footer}>
-            <AppText
-              title="Don't have an account?"
-              textColor={AppColors.DARKGRAY}
-              textSize={1.6}
-            />
-            <TouchableOpacity onPress={() => nav.navigate('SignUp')}>
-              <AppText title={'Sign up'} textColor={AppColors.ThemeColor} textFontWeight />
-            </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </View>
+        <View style={styles.footer}>
+          <AppText
+            title="Don't have an account?"
+            textColor={AppColors.DARKGRAY}
+            textSize={1.5}
+          />
+          <TouchableOpacity onPress={() => nav.navigate('SignUp')}>
+            <AppText underline textFontWeight title={'Sign up'} textColor={AppColors.BLACK} textSize={1.7} />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: AppColors.WHITE,
+
   },
   scrollContent: {
-    paddingHorizontal: responsiveWidth(6),
-    paddingVertical: responsiveHeight(4),
-    gap: responsiveHeight(3),
-  },
-  heroSection: {
-    backgroundColor: AppColors.lightThemeColor,
-    borderRadius: 32,
-    padding: responsiveWidth(6),
-    gap: responsiveHeight(1.5),
-  },
-  heroBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: responsiveWidth(4),
-    paddingVertical: responsiveHeight(0.5),
-    borderRadius: 16,
-    backgroundColor: AppColors.ThemeColor,
-  },
-  heroImage: {
-    width: '100%',
-    height: responsiveHeight(20),
-    borderRadius: 24,
-    resizeMode: 'contain',
-    alignSelf: 'center',
+    flexGrow: 1,
   },
   card: {
-    backgroundColor: AppColors.WHITE,
-    borderRadius: 28,
-    padding: responsiveWidth(6),
-    gap: responsiveHeight(2),
-    shadowColor: '#050A30',
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 15 },
-    elevation: 8,
+    gap: responsiveHeight(1.5),
   },
   forgotButton: {
     alignSelf: 'flex-end',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: responsiveWidth(2),
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: AppColors.LIGHTGRAY,
+    marginTop: -responsiveHeight(0.8),
   },
   socialWrapper: {
     gap: responsiveHeight(1.5),
@@ -217,6 +182,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
+    marginTop: 'auto',
   },
 });
 

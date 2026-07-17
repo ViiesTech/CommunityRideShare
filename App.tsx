@@ -1,16 +1,26 @@
-/* eslint-disable react-native/no-inline-styles */
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import Routes from './src/routes/Routes';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { LogBox } from 'react-native';
+import Toast from 'react-native-toast-message';
+import { Provider } from 'react-redux';
+import { store, persistor } from './src/redux/store';
+import { PersistGate } from 'redux-persist/integration/react';
 
 const App = () => {
+  LogBox.ignoreAllLogs(true);
   return (
-    <NavigationContainer>
-      <SafeAreaView style={{ flex: 1 }}>
-        <Routes />
-      </SafeAreaView>
-    </NavigationContainer>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <Routes />
+            <Toast />
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </PersistGate>
+    </Provider>
   );
 };
 

@@ -2,161 +2,127 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
   ScrollView,
-  StatusBar,
   StyleSheet,
+  TouchableOpacity,
   View,
-  Alert,
 } from 'react-native';
 import AppColors from '../../utils/AppColors';
 import AppText from '../../components/AppText';
 import AppTextInput from '../../components/AppTextInput';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import AppButton from '../../components/AppButton';
 import {
   responsiveHeight,
   responsiveWidth,
 } from '../../utils/Responsive_Dimensions';
-import { AppImages } from '../../assets/images';
+import Wrapper from '../../components/Wrapper';
+import { showToast } from '../../utils/toast';
+import Feather from 'react-native-vector-icons/Feather';
+import AppLogo from '../../components/AppLogo';
+import { useResetPasswordMutation } from '../../redux/api/apiSlice';
 
 const NewPassword = () => {
+  const [resetPassword, { isLoading }] = useResetPasswordMutation();
   const [state, setState] = useState({
     password: '',
     confirmPassword: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const nav = useNavigation();
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const cardTranslate = useRef(new Animated.Value(25)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(cardOpacity, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      Animated.spring(cardTranslate, {
-        toValue: 0,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [cardOpacity, cardTranslate]);
+  const route = useRoute();
+  const email = route.params?.email || '';
 
   const onChangeText = (key, value) => {
     setState(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleResetPassword = () => {
-    if (!state.password.trim()) {
-      Alert.alert('Missing password', 'Please enter a new password.');
-      return;
+  const handleResetPassword = async () => {
+    try {
+      if (!state.password.trim()) {
+        showToast('error', 'Missing password', 'Please enter a new password.');
+        return;
+      }
+      const response = await resetPassword({ email, newPassword: state.password , confirmPassword:state.confirmPassword }).unwrap();
+      console.log('Reset password response:', response);
+      if (response.success) {
+        showToast(
+          'success',
+          'Congratulations',
+          response?.message || 'Password reset successfully. Please log in with your new credentials.',
+          () => { nav.replace('Login') }
+        );
+      } else {
+        showToast(
+          'error',
+          response?.errorCode || 'Failed to set new password',
+          response?.message || 'Something went wrong'
+        );
+      }
+    } catch (err) {
+      showToast(
+        'error',
+        err?.data?.errorCode || 'Failed to set new password',
+        err?.data?.message || 'Something went wrong'
+      );
     }
-
-    if (state.password.length < 6) {
-      Alert.alert('Too short', 'Password must be at least 6 characters.');
-      return;
-    }
-
-    if (state.password !== state.confirmPassword) {
-      Alert.alert('Mismatch', 'Passwords do not match.');
-      return;
-    }
-
-    Alert.alert('Password reset', 'Your password has been updated.', [
-      {
-        text: 'Back to login',
-        onPress: () => nav.navigate('Login'),
-      },
-    ]);
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={AppColors.WHITE} />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          bounces={false}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.heroSection}>
-            <View style={styles.heroBadge}>
-              <AppText title="Final step" textColor={AppColors.WHITE} textFontWeight />
-            </View>
-            <AppText
-              title="Create a new password"
-              textColor={AppColors.BLACK}
-              textSize={3}
-              textFontWeight
-            />
-            <AppText
-              title="Set a strong password that only you know."
-              textColor={AppColors.DARKGRAY}
-              textSize={1.7}
-              lineHeight={2.4}
-            />
-            <Image source={AppImages.roundedImg} style={styles.heroImage} />
-          </View>
-          <Animated.View
-            style={[styles.card, { opacity: cardOpacity, transform: [{ translateY: cardTranslate }] }]}
-          >
-            <AppTextInput
-              inputPlaceHolder={'New password'}
-              inputWidth={80}
-              secureTextEntry
-              value={state.password}
-              onChangeText={text => onChangeText('password', text)}
-              containerBg={AppColors.inputBgColor}
-              borderWidth={0}
-            />
-            <AppTextInput
-              inputPlaceHolder={'Confirm password'}
-              inputWidth={80}
-              secureTextEntry
-              value={state.confirmPassword}
-              onChangeText={text => onChangeText('confirmPassword', text)}
-              containerBg={AppColors.inputBgColor}
-              borderWidth={0}
-            />
-            <View style={styles.passwordHint}>
-              <View style={styles.hintDot} />
-              <AppText
-                title="Use 6+ characters with a mix of numbers and symbols."
-                textColor={AppColors.DARKGRAY}
-                textSize={1.4}
-                lineHeight={2.2}
-              />
-            </View>
-            <AppButton
-              title={'Save password'}
-              bgColor={AppColors.ThemeColor}
-              handlePress={handleResetPassword}
-              buttoWidth={75}
-            />
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <Wrapper style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        bounces={false}
+        showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <View style={styles.card}>
+          <AppLogo style={{ marginVertical: responsiveHeight(5) }} />
+          <AppText title="New Password" textSize={4} textFontWeight textAlignment='center' />
+          <AppText title="Create and confirm your new secure password." textSize={1.6} lineHeight={2} textFontWeight textColor={AppColors.darkGray} textAlignment='center' />
+          <AppTextInput
+            inputPlaceHolder={'New password'}
+            inputWidth={75}
+            secureTextEntry={!showPassword}
+            value={state.password}
+            onChangeText={text => onChangeText('password', text)}
+            containerBg={AppColors.inputBgColor}
+            borderWidth={0}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Feather name={showPassword ? 'eye' : 'eye-off'} size={responsiveWidth(6)} color={AppColors.DARKGRAY} />
+              </TouchableOpacity>
+            }
+          />
+          <AppTextInput
+            inputPlaceHolder={'Confirm password'}
+            inputWidth={75}
+            secureTextEntry={!showConfirmPassword}
+            value={state.confirmPassword}
+            onChangeText={text => onChangeText('confirmPassword', text)}
+            containerBg={AppColors.inputBgColor}
+            borderWidth={0}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                <Feather name={showConfirmPassword ? 'eye' : 'eye-off'} size={responsiveWidth(6)} color={AppColors.DARKGRAY} />
+              </TouchableOpacity>
+            }
+          />
+          <AppButton
+            title={'Confirm New Password'}
+            bgColor={AppColors.BLACK}
+            handlePress={handleResetPassword}
+            loading={isLoading}
+          />
+        </View>
+      </ScrollView>
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: AppColors.WHITE,
   },
   scrollContent: {
-    paddingHorizontal: responsiveWidth(6),
-    paddingVertical: responsiveHeight(4),
-    gap: responsiveHeight(3),
   },
   heroSection: {
     backgroundColor: AppColors.lightThemeColor,
@@ -178,15 +144,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   card: {
-    backgroundColor: AppColors.WHITE,
-    borderRadius: 28,
-    padding: responsiveWidth(6),
-    gap: responsiveHeight(2),
-    shadowColor: '#050A30',
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 15 },
-    elevation: 8,
+    gap: responsiveHeight(1.5),
   },
   passwordHint: {
     flexDirection: 'row',

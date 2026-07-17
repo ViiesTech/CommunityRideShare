@@ -1,14 +1,6 @@
 import React from 'react';
 import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+  Image, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -21,13 +13,16 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from '../../../utils/Responsive_Dimensions';
-
-const nameField = { id: 'name', label: 'Full Name', placeholder: 'Anastasia Sya' };
-
-const fields = [
-  { id: 'phone', label: 'Phone Number', placeholder: '123 456 789', keyboardType: 'phone-pad' },
-  { id: 'email', label: 'Email', placeholder: 'AnastasiaSya@gmail.com', keyboardType: 'email-address' },
-];
+import { useDispatch, useSelector } from 'react-redux';
+import { selectCurrentUser, setUser } from '../../../redux/slices/authSlice';
+import Wrapper from '../../../components/Wrapper';
+import AppHeader from '../../../components/AppHeader';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import AppButton from '../../../components/AppButton';
+import moment from "moment";
+import { showToast } from '../../../utils/toast';
+import { useUpdateProfileMutation } from '../../../redux/api/apiSlice';
+import AppKeyboardAvoidingView from '../../../components/AppKeyboardAvoidingView';
 
 const formatDate = date => {
   if (!date) {
@@ -39,14 +34,10 @@ const formatDate = date => {
   return `${day}/${month}/${year}`;
 };
 
-const initialDob = new Date(1989, 1, 28);
-const initialAvatarUri = 'https://i.pravatar.cc/200?img=47';
-
 const initialValues = {
-  name: 'Anastasia Sya',
-  dob: formatDate(initialDob),
-  phone: '123 456 789',
-  email: 'AnastasiaSya@gmail.com',
+  name: '',
+  phone: '',
+  email: '',
   about: '',
 };
 
@@ -58,10 +49,51 @@ const imagePickerOptions = {
 
 const EditProfile = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
+  const user = useSelector(selectCurrentUser)
+  const [updateProfile, { isLoading }] = useUpdateProfileMutation();
   const [formData, setFormData] = React.useState(initialValues);
-  const [dobDate, setDobDate] = React.useState(initialDob);
+  const [dobDate, setDobDate] = React.useState(null);
   const [showDobPicker, setShowDobPicker] = React.useState(false);
-  const [avatarUri, setAvatarUri] = React.useState(initialAvatarUri);
+  const [avatarUri, setAvatarUri] = React.useState('');
+  const [avatarFile, setAvatarFile] = React.useState(null);
+
+  const originalRef = React.useRef({
+    name: '',
+    phone: '',
+    email: '',
+    about: '',
+    dob: null,
+    avatar: '',
+  });
+
+  React.useEffect(() => {
+    if (!user) return;
+
+    const userDob = user?.dOB ? new Date(user.dOB) : null;
+
+    setDobDate(userDob);
+    setFormData({
+      name: user?.name ?? '',
+      phone: user?.phone ?? '',
+      email: user?.email ?? '',
+      about: user?.about ?? '',
+    });
+
+    if (user?.avatarUrl) {
+      setAvatarUri(user.avatarUrl);
+      setAvatarFile(null);
+    }
+
+    originalRef.current = {
+      name: user?.name ?? '',
+      phone: user?.phone ?? '',
+      email: user?.email ?? '',
+      about: user?.about ?? '',
+      dob: userDob ? userDob.toISOString() : null,
+      avatar: user?.avatarUrl ?? '',
+    };
+  }, [user]);
 
   const handleChange = React.useCallback((fieldId, value) => {
     setFormData(prev => ({ ...prev, [fieldId]: value }));
@@ -75,19 +107,15 @@ const EditProfile = () => {
     setShowDobPicker(false);
   }, []);
 
-  const handleDobChange = React.useCallback(
-    (_, selectedDate) => {
-      if (Platform.OS === 'android') {
-        setShowDobPicker(false);
-      }
+  const handleDobChange = (_, selectedDate) => {
+    if (Platform.OS === 'android') {
+      setShowDobPicker(false);
+    }
 
-      if (selectedDate) {
-        setDobDate(selectedDate);
-        handleChange('dob', formatDate(selectedDate));
-      }
-    },
-    [handleChange],
-  );
+    if (selectedDate) {
+      setDobDate(selectedDate);
+    }
+  };
 
   const handleSelectAvatar = React.useCallback(() => {
     launchImageLibrary(imagePickerOptions, response => {
@@ -97,117 +125,158 @@ const EditProfile = () => {
       const asset = response.assets?.[0];
       if (asset?.uri) {
         setAvatarUri(asset.uri);
+        setAvatarFile({
+          uri: asset.uri,
+          type: asset.type || 'image/jpeg',
+          name: asset.fileName || `avatar_${Date.now()}.jpg`,
+        });
       }
     });
   }, []);
 
+  const hasProfileChanged = () => {
+    const original = originalRef.current;
+
+    const currentDobISO = dobDate ? dobDate.toISOString() : null;
+
+    if (formData.name !== original.name) return true;
+    if (formData.phone !== original.phone) return true;
+    if (formData.about !== original.about) return true;
+    if (currentDobISO !== original.dob) return true;
+
+    // avatar change hua?
+    if (avatarFile) return true;
+
+    return false;
+  };
+
+  const handleContinue = async () => {
+    try {
+
+      if (!hasProfileChanged()) {
+        navigation.goBack()
+        return
+      }
+
+      const multipart = new FormData();
+      const dobISO = dobDate ? moment(dobDate).toISOString() : null;
+
+      multipart.append('name', formData.name);
+      multipart.append('dOB', dobISO);
+      multipart.append('phone', formData.phone);
+      multipart.append('about', formData.about);
+      if (avatarFile) {
+        multipart.append('avatar', avatarFile);
+      }
+      const response = await updateProfile(multipart).unwrap();
+      if (response?.success) {
+        dispatch(setUser(response?.data?.user));
+        showToast(
+          'success',
+          'Congratulations',
+          response?.message || 'Your profile has been updated successfully.',
+          () => { navigation.goBack() });
+      } else {
+        showToast(
+          'error',
+          response?.errorCode || 'Profile Update Failed',
+          response?.message || 'Something went wrong'
+        );
+      }
+    } catch (err) {
+      showToast(
+        'error',
+        err?.data?.errorCode || 'Profile Update Failed',
+        err?.data?.message || 'Something went wrong'
+      );
+    }
+  };
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.headerRow}>
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => navigation.goBack()}
-            >
-              <SVGXml icon={AppIcons.arrowLeft} width={18} height={18} />
-            </TouchableOpacity>
-            <AppText title="Edit Profile" textColor={AppColors.BLACK} textFontWeight textSize={2.3} />
-            <View style={styles.headerSpacer} />
-          </View>
-
-          <View style={styles.avatarBlock}>
-            <View style={styles.avatarShell}>
+    <Wrapper style={styles.safeArea} paddingHorizontal={false}>
+      <AppHeader title="Edit Profile" paddingHorizontal={true} />
+      <AppKeyboardAvoidingView contentContainerStyle={styles.content}>
+        <View style={styles.avatarBlock}>
+          {
+            avatarUri ? (
               <Image
-                source={{ uri: avatarUri }}
-                style={styles.avatar}
-              />
-            </View>
-            <TouchableOpacity activeOpacity={0.8} onPress={handleSelectAvatar}>
-              <AppText title="Change Avatar" textColor={AppColors.ThemeColor} textFontWeight textSize={1.7} />
-            </TouchableOpacity>
-          </View>
-
-          <FormField
-            {...nameField}
-            value={formData[nameField.id]}
-            onChangeText={text => handleChange(nameField.id, text)}
-          />
-
-          <DatePickerField
-            label="Date of Birth"
-            value={formData.dob}
-            onPress={openDobPicker}
-          />
-
-          {fields.map(field => (
-            <FormField
-              key={field.id}
-              {...field}
-              value={formData[field.id]}
-              onChangeText={text => handleChange(field.id, text)}
-            />
-          ))}
-
-          <FormField
-            label="About"
-            placeholder="Tell others about you"
-            multiline
-            large
-            value={formData.about}
-            onChangeText={text => handleChange('about', text)}
-          />
-
-          <View style={styles.labelRow}>
-            <AppText title="Select ID" textColor={AppColors.BLACK} textFontWeight textSize={1.8} />
-          </View>
-          <View style={styles.dropdownField}>
-            <AppText title="Personal ID" textColor={AppColors.BLACK} textFontWeight textSize={1.7} />
-            <View style={styles.dropdownRight}>
-              <View style={styles.dropdownCheck}>
-                <View style={styles.dropdownDot} />
+                source={{ uri: avatarUri }} style={styles.avatar} resizeMode="cover" />
+            ) : (
+              <View style={styles.avatarIconView}>
+                <Ionicons name="person-sharp" size={responsiveWidth(20)} color={AppColors.WHITE} />
               </View>
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.submitButton} activeOpacity={0.85}>
-            <AppText title="Update" textColor={AppColors.WHITE} textFontWeight textAlignment="center" textSize={1.9} />
+            )
+          }
+          <TouchableOpacity activeOpacity={0.8} onPress={handleSelectAvatar}>
+            <AppText title="Change Avatar" textColor={AppColors.ThemeColor} textFontWeight textSize={1.7} />
           </TouchableOpacity>
-
-          {showDobPicker && Platform.OS === 'ios' && (
-            <View style={styles.iosPickerSheet}>
-              <View style={styles.iosPickerHeader}>
-                <TouchableOpacity activeOpacity={0.85} onPress={closeDobPicker}>
-                  <AppText title="Done" textColor={AppColors.ThemeColor} textFontWeight textSize={1.7} />
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={dobDate}
-                mode="date"
-                display="spinner"
-                onChange={handleDobChange}
-                maximumDate={new Date()}
-                style={styles.iosPicker}
-              />
+        </View>
+        <FormField
+          label="Full Name"
+          placeholder="Enter your name"
+          value={formData.name}
+          onChangeText={text => handleChange('name', text)}
+        />
+        <DatePickerField
+          label="Date of Birth"
+          value={dobDate ? formatDate(dobDate) : ''}
+          onPress={openDobPicker}
+        />
+        <FormField
+          label="Phone Number"
+          placeholder="123 456 789"
+          keyboardType="phone-pad"
+          value={formData.phone}
+          onChangeText={text => handleChange('phone', text)}
+        />
+        <FormField
+          label="Email"
+          placeholder="Email"
+          value={formData.email}
+          disabled
+        />
+        <FormField
+          label="About"
+          placeholder="Tell others about you"
+          multiline
+          large
+          value={formData.about}
+          onChangeText={text => handleChange('about', text)}
+        />
+        <AppButton title={'Update'} bgColor={AppColors.BLACK} handlePress={handleContinue} loading={isLoading} />
+        {showDobPicker && Platform.OS === 'ios' && (
+          <View style={styles.iosPickerSheet}>
+            <View style={styles.iosPickerHeader}>
+              <TouchableOpacity activeOpacity={0.85} onPress={closeDobPicker}>
+                <AppText title="Done" textColor={AppColors.ThemeColor} textFontWeight textSize={1.7} />
+              </TouchableOpacity>
             </View>
-          )}
-
-          {showDobPicker && Platform.OS !== 'ios' && (
             <DateTimePicker
-              value={dobDate}
+              value={dobDate ?? new Date()}
               mode="date"
-              display="calendar"
+              display="spinner"
               onChange={handleDobChange}
               maximumDate={new Date()}
+              style={styles.iosPicker}
             />
-          )}
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </View>
+        )}
+
+        {showDobPicker && Platform.OS !== 'ios' && (
+          <DateTimePicker
+            value={dobDate ?? new Date()}
+            mode="date"
+            display="calendar"
+            onChange={handleDobChange}
+            maximumDate={new Date()}
+          />
+        )}
+      </AppKeyboardAvoidingView>
+    </Wrapper>
   );
 };
 
-const FormField = ({ label, placeholder, multiline, large, keyboardType, value, onChangeText }) => (
+const FormField = ({ label, placeholder, multiline, large, keyboardType, value, onChangeText, disabled = false }) => (
   <View style={styles.fieldBlock}>
     <AppText title={label} textColor={AppColors.BLACK} textFontWeight textSize={1.8} />
     <TextInput
@@ -219,6 +288,7 @@ const FormField = ({ label, placeholder, multiline, large, keyboardType, value, 
       textAlignVertical={multiline ? 'top' : 'center'}
       value={value}
       onChangeText={onChangeText}
+      editable={!disabled}
     />
   </View>
 );
@@ -229,8 +299,7 @@ const DatePickerField = ({ label, value, onPress }) => (
     <TouchableOpacity
       style={[styles.input, styles.dateInput]}
       activeOpacity={0.85}
-      onPress={onPress}
-    >
+      onPress={onPress}>
       <AppText
         title={value || 'Select date'}
         textColor={value ? AppColors.BLACK : AppColors.DARKGRAY}
@@ -243,17 +312,17 @@ const DatePickerField = ({ label, value, onPress }) => (
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: '#F5F5F7',
+
   },
   keyboardAvoid: {
     flex: 1,
   },
   content: {
     paddingHorizontal: responsiveWidth(5),
-    paddingBottom: responsiveHeight(6),
-    paddingTop: responsiveHeight(3),
-    gap: responsiveHeight(2.2),
+    paddingTop: responsiveWidth(3),
+    backgroundColor: AppColors.grayBG,
+    flexGrow: 1,
+    gap: responsiveHeight(3),
   },
   headerRow: {
     flexDirection: 'row',
@@ -293,9 +362,17 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   avatar: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 44,
+    width: responsiveWidth(31),
+    height: responsiveWidth(31),
+    borderRadius: responsiveWidth(40),
+  },
+  avatarIconView: {
+    width: responsiveWidth(31),
+    height: responsiveWidth(31),
+    borderRadius: responsiveWidth(80),
+    backgroundColor: AppColors.appBlue,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   labelRow: {
     marginTop: responsiveHeight(1),
@@ -304,20 +381,13 @@ const styles = StyleSheet.create({
     gap: responsiveHeight(0.8),
   },
   input: {
-    width: '100%',
-    borderRadius: 18,
+    width: responsiveWidth(),
+    borderRadius: responsiveWidth(2),
     backgroundColor: AppColors.WHITE,
     paddingHorizontal: responsiveWidth(4),
     paddingVertical: responsiveHeight(1.8),
     fontSize: responsiveWidth(4),
     color: AppColors.BLACK,
-    borderWidth: 1,
-    borderColor: '#E7E9F2',
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
   },
   inputMultiline: {
     minHeight: responsiveHeight(12),

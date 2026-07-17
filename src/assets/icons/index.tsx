@@ -128,9 +128,17 @@ const location = buildLocationIcon('#0887FC');
 const locationGreen = buildLocationIcon('#0AA64F');
 const locationRed = buildLocationIcon('#FF4D4D');
 
-const homeTab = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M3.33334 7.5L10 2.5L16.6667 7.5V15.8333C16.6667 16.2754 16.491 16.6993 16.1785 17.0118C15.8659 17.3244 15.442 17.5 15 17.5H5.00001C4.55798 17.5 4.13406 17.3244 3.8215 17.0118C3.50894 16.6993 3.33334 16.2754 3.33334 15.8333V7.5Z" stroke="#0D7CF4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M8.33334 17.5V10H11.6667V17.5" stroke="#0D7CF4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+// const homeTab = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+// <path d="M3.33334 7.5L10 2.5L16.6667 7.5V15.8333C16.6667 16.2754 16.491 16.6993 16.1785 17.0118C15.8659 17.3244 15.442 17.5 15 17.5H5.00001C4.55798 17.5 4.13406 17.3244 3.8215 17.0118C3.50894 16.6993 3.33334 16.2754 3.33334 15.8333V7.5Z" stroke="#0D7CF4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+// <path d="M8.33334 17.5V10H11.6667V17.5" stroke="#0D7CF4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+// </svg>`;
+
+// const homeTab = `<svg width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+// <path d="M18.05 4.81774L12.29 0.78774C10.72 -0.31226 8.31 -0.252259 6.8 0.917741L1.79 4.82774C0.79 5.60774 0 7.20774 0 8.46774V15.3677C0 17.9177 2.07 19.9977 4.62 19.9977H15.4C17.95 19.9977 20.02 17.9277 20.02 15.3777V8.59774C20.02 7.24774 19.15 5.58774 18.05 4.81774ZM10.76 15.9977C10.76 16.4077 10.42 16.7477 10.01 16.7477C9.6 16.7477 9.26 16.4077 9.26 15.9977V12.9977C9.26 12.5877 9.6 12.2477 10.01 12.2477C10.42 12.2477 10.76 12.5877 10.76 12.9977V15.9977Z" fill="#D1D1D1"/>
+// </svg>`;
+
+const homeTab = `<svg width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M18.05 4.81774L12.29 0.78774C10.72 -0.31226 8.31 -0.252259 6.8 0.917741L1.79 4.82774C0.79 5.60774 0 7.20774 0 8.46774V15.3677C0 17.9177 2.07 19.9977 4.62 19.9977H15.4C17.95 19.9977 20.02 17.9277 20.02 15.3777V8.59774C20.02 7.24774 19.15 5.58774 18.05 4.81774ZM10.76 15.9977C10.76 16.4077 10.42 16.7477 10.01 16.7477C9.6 16.7477 9.26 16.4077 9.26 15.9977V12.9977C9.26 12.5877 9.6 12.2477 10.01 12.2477C10.42 12.2477 10.76 12.5877 10.76 12.9977V15.9977Z" fill="#0D7CF4"/>
 </svg>`;
 
 const profileTab = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

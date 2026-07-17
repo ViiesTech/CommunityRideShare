@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AppText from '../../../components/AppText';
@@ -16,65 +18,92 @@ import {
 import LineBreak from '../../../components/LineBreak';
 import { AppIcons } from '../../../assets/icons';
 import SVGXml from '../../../components/SVGXML';
+import Wrapper from '../../../components/Wrapper';
+import AppHeader from '../../../components/AppHeader';
+import { useSelector } from 'react-redux';
+import { selectCommunityId } from '../../../redux/slices/authSlice';
+import { useGetCommunityByIdQuery, useManageJoinRequestMutation } from '../../../redux/api/apiSlice';
+import BoxShadow from '../../../components/BoxShadow';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import Clipboard from '@react-native-clipboard/clipboard';
+import { showToast } from '../../../utils/toast';
 
-const TABS = [
-  { id: 'requests', label: 'Join Request' },
-  { id: 'members', label: 'Members (1)' },
-  { id: 'rides', label: 'Rides (0)' },
-];
-const members = [
-  { id: 1, name: 'Member 1', userId: 'user-1762296', isAdmin: true },
-];
-
-const joinRequests = [
-  { id: 1, name: 'Member 1', userId: 'user-1762296' },
-  { id: 2, name: 'Member 2', userId: 'user-1762296' },
-];
+// const membersasd = [
+//   { id: 1, name: 'Member 1', userId: 'user-1762296', isAdmin: true },
+//   { id: 1, name: 'Member 1', userId: 'user-1762296', isAdmin: true },
+// ];
 
 const AdminPanel = () => {
   const navigation = useNavigation();
+
+  const communityId = useSelector(selectCommunityId);
+  const { data: communityData } = useGetCommunityByIdQuery(communityId, {
+    skip: !communityId,
+  });
+  const [manageJoinRequest] = useManageJoinRequestMutation();
+
+  console.log("Admin panel data ", communityData);
+
   const [activeTab, setActiveTab] = useState('requests');
+  const [loadingStates, setLoadingStates] = useState({});
+  const isAnyLoading = Object.values(loadingStates).some(val => val === 'approve' || val === 'reject');
+  const joinRequests = communityData?.pendingRequests || [];
+  const members = communityData?.members || [];
+  console.log("members", members);
+
+  // const members = membersasd
+
+  const TABS = [
+    { id: 'requests', label: `Join Request (${joinRequests.length})` },
+    { id: 'members', label: `Members (${members.length})` },
+    { id: 'rides', label: 'Rides (0)' },
+  ];
+
+  const handleCopyCode = () => {
+    const code = communityData?.inviteCode;
+    if (code && code !== 'NA') {
+      Clipboard.setString(code);
+      showToast('success', 'Copied', `Community code copied.`);
+    }
+  };
+
+
+  const handleRequest = async (memberId, action) => {
+    if (isAnyLoading || loadingStates[memberId]) return;
+
+    setLoadingStates(prev => ({ ...prev, [memberId]: action }));
+    try {
+      const response = await manageJoinRequest({
+        communityId, targetUserId: memberId, action,
+      }).unwrap();
+      console.log("handleRequest res", response);
+      if (response?.success) {
+        setLoadingStates(prev => ({ ...prev, [memberId]: 'success' }));
+        showToast(
+          'success',
+          'Congratulations',
+          response?.message || `Request ${action === 'approve' ? 'approved' : 'rejected'} successfully.`);
+      } else {
+        setLoadingStates(prev => ({ ...prev, [memberId]: 'error' }));
+        showToast(
+          'error',
+          response?.errorCode || 'Request Failed',
+          response?.message || `Request ${action === 'approve' ? 'approved' : 'rejected'} failed.`);
+      }
+    } catch (err) {
+      console.log("err handleRequest", err);
+      setLoadingStates(prev => ({ ...prev, [memberId]: 'error' }));
+      showToast(
+        'error',
+        err?.data?.errorCode || 'Request Failed',
+        err?.data?.message || 'Something went wrong'
+      );
+    }
+  };
 
   return (
-    <ScrollView
-      style={{ flex: 1, backgroundColor: AppColors.WHITE }}
-      contentContainerStyle={{ paddingBottom: 24 }}
-    >
-      {/* Header with back arrow */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: responsiveHeight(3),
-          paddingHorizontal: responsiveWidth(5),
-          backgroundColor: AppColors.WHITE,
-          marginBottom: 2,
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ padding: 4, marginRight: 8 }}
-        >
-          <SVGXml icon={AppIcons.arrowLeft} width={24} height={24} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <AppText
-            title="Admin Panel"
-            textFontWeight
-            textSize={2.3}
-            textAlignment="center"
-          />
-          <LineBreak space={1} />
-          <AppText
-            title="Manage Downtown Place 2"
-            textColor={AppColors.DARKGRAY}
-            textSize={1.5}
-            textAlignment="center"
-          />
-        </View>
-      </View>
-
-      {/* Tabs */}
+    <Wrapper bgColor={AppColors.grayBG} >
+      <AppHeader title='Admin Panel' description={`Manage ${communityData?.name || 'Your  Community'}`} />
       <View style={styles.tabBar}>
         {TABS.map(tab => (
           <TouchableOpacity
@@ -95,146 +124,209 @@ const AdminPanel = () => {
 
       {/* Pending Join Requests */}
       {activeTab === 'requests' && (
-        <View style={styles.sectionCard}>
+        <View>
           <AppText title="Pending Join Request" textFontWeight textSize={2} />
-          <LineBreak space={1} />
           <AppText
             title="Review and approve users who want to join your community"
             textColor={AppColors.DARKGRAY}
             textSize={1.7}
           />
           <LineBreak space={1} />
-          {joinRequests.map(member => (
-            <View key={member.id} style={styles.requestCard}>
-              <View style={styles.avatarCircle}>
-                <Text style={{ fontSize: 22, color: AppColors.ThemeColor }}>
-                  👤
-                </Text>
+          <BoxShadow
+            scroll={true}
+            style={[styles.sectionCard, { maxHeight: responsiveHeight(35), padding: 0 }]}
+            contentContainerStyle={{ padding: responsiveWidth(2) }}
+          >
+            {joinRequests.length > 0 ? (
+              <View style={{ gap: responsiveWidth(1.5) }}>
+                {joinRequests.map(member => (
+                  <View key={member._id} style={styles.requestCard}>
+                    <View style={styles.avatarCircle}>
+                      {member.avatarUrl ? (
+                        <Image
+                          source={{ uri: member.avatarUrl }}
+                          style={styles.avatarImage}
+                        />
+                      ) : (
+                        <Text style={{ fontSize: 22, color: AppColors.ThemeColor }}>
+                          👤
+                        </Text>
+                      )}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <AppText
+                        title={member.name}
+                        textFontWeight
+                        textColor={AppColors.WHITE}
+                        textSize={1.8}
+                      />
+                      <AppText
+                        title={`ID: ${member._id?.slice(0, 10)}`}
+                        textColor={AppColors.WHITE}
+                        textSize={1.4}
+                      />
+                    </View>
+                    <View style={{ flexDirection: 'column', gap: 8, marginLeft: 8 }}>
+                      <TouchableOpacity
+                        style={styles.approveBtn}
+                        onPress={() => handleRequest(member._id, 'approve')}
+                        disabled={isAnyLoading || loadingStates[member._id] === 'success'}
+                      >
+                        {loadingStates[member._id] === 'approve' ? (
+                          <ActivityIndicator size="small" color={AppColors.WHITE} />
+                        ) : (
+                          <AppText
+                            title="Approve"
+                            textColor={AppColors.WHITE}
+                            textFontWeight
+                            textSize={1.5}
+                          />
+                        )}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.denyBtn}
+                        onPress={() => handleRequest(member._id, 'reject')}
+                        disabled={isAnyLoading || loadingStates[member._id] === 'success'}
+                      >
+                        {loadingStates[member._id] === 'reject' ? (
+                          <ActivityIndicator size="small" color={AppColors.WHITE} />
+                        ) : (
+                          <AppText
+                            title="Deny"
+                            textColor={AppColors.WHITE}
+                            textFontWeight
+                            textSize={1.5}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
               </View>
-              <View style={{ flex: 1 }}>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="people" size={54} color="#B0B5C3" />
                 <AppText
-                  title={member.name}
+                  title="No pending requests"
                   textFontWeight
-                  textColor={AppColors.WHITE}
+                  textColor={AppColors.BLACK}
                   textSize={1.8}
-                />
-                <AppText
-                  title={`ID: ${member.userId}`}
-                  textColor={AppColors.WHITE}
-                  textSize={1.4}
+                  textAlignment="center"
                 />
               </View>
-              <View style={{ flexDirection: 'column', gap: 8, marginLeft: 8 }}>
-                <TouchableOpacity style={styles.approveBtn}>
-                  <AppText
-                    title="Approve"
-                    textColor={AppColors.WHITE}
-                    textFontWeight
-                    textSize={1.5}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.denyBtn}>
-                  <AppText
-                    title="Deny"
-                    textColor={AppColors.WHITE}
-                    textFontWeight
-                    textSize={1.5}
-                  />
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
+            )}
+          </BoxShadow>
         </View>
       )}
 
       {/* Members Tab */}
       {activeTab === 'members' && (
-        <View style={styles.sectionCard}>
+        <View>
           <AppText title="Community Members" textFontWeight textSize={2} />
-          <LineBreak space={1} />
           <AppText
-            title={`1 members in Downtown Place 2`}
+            title={`${members.length} members in ${communityData?.name || 'this community'}`}
             textColor={AppColors.DARKGRAY}
             textSize={1.7}
           />
           <LineBreak space={1} />
-          {members.map(member => (
-            <View key={member.id} style={styles.requestCard}>
-              <View style={styles.avatarCircle}>
-                <Text style={{ fontSize: 22, color: AppColors.ThemeColor }}>
-                  👤
-                </Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <AppText
-                  title={member.name}
-                  textFontWeight
-                  textColor={AppColors.WHITE}
-                  textSize={1.8}
-                />
-                <AppText
-                  title={`ID: ${member.userId}`}
-                  textColor={AppColors.WHITE}
-                  textSize={1.4}
-                />
-              </View>
-              {member.isAdmin && (
-                <View style={styles.adminBadge}>
-                  <AppText
-                    title="Admin"
-                    textColor={AppColors.ThemeColor}
-                    textFontWeight
-                    textSize={1.4}
-                  />
+          <BoxShadow
+            scroll={true}
+            style={[styles.sectionCard, { maxHeight: responsiveHeight(40), padding: 0 }]}
+            contentContainerStyle={{ padding: responsiveWidth(2) }}>
+            <View style={{ gap: responsiveHeight(0.5) }}>
+              {members.map(member => (
+                <View key={member._id} style={styles.requestCard}>
+                  <View style={styles.avatarCircle}>
+                    {member.avatarUrl ? (
+                      <Image
+                        source={{ uri: member.avatarUrl }}
+                        style={styles.avatarImage}
+                      />
+                    ) : (
+                      <Text style={{ fontSize: 22, color: AppColors.ThemeColor }}>
+                        👤
+                      </Text>
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <AppText
+                      title={`${member.name}${member.communityRole === 'admin' ? ' (You)' : ''}`}
+                      textFontWeight
+                      textColor={AppColors.WHITE}
+                      textSize={1.8}
+                    />
+                    <AppText
+                      title={`ID: ${member._id?.slice(0, 10)}`}
+                      textColor={AppColors.WHITE}
+                      textSize={1.4}
+                    />
+                  </View>
+                  {member.communityRole === "admin" && (
+                    <View style={styles.adminBadge}>
+                      <AppText
+                        title="Admin"
+                        textColor={AppColors.ThemeColor}
+                        textFontWeight
+                        textSize={1.4}
+                      />
+                    </View>
+                  )}
                 </View>
-              )}
+              ))}
             </View>
-          ))}
+          </BoxShadow>
         </View>
       )}
 
       {/* Rides Tab */}
       {activeTab === 'rides' && (
-        <View style={styles.sectionCard}>
-          <AppText title="Community Members" textFontWeight textSize={2} />
+        <View>
+          <AppText title="Community Rides" textFontWeight textSize={2} />
+          <AppText
+            title="Monitor all rides posted in your community"
+            textColor={AppColors.DARKGRAY}
+            textSize={1.7}
+          />
           <LineBreak space={1} />
-          <View
-            style={{
-              alignItems: 'center',
-              justifyContent: 'center',
-              flex: 1,
-              minHeight: 140,
-            }}
+          <BoxShadow
+            style={[styles.sectionCard, { padding: 0 }]}
+            contentContainerStyle={{ padding: responsiveWidth(2) }}
           >
-            <AppText
-              title="Monitor all rides posted in your community"
-              textColor={AppColors.DARKGRAY}
-              textSize={1.7}
-            />
-            <LineBreak space={1} />
-            <Text style={{ fontSize: 54, color: '#B0B5C3' }}>👥</Text>
-          </View>
+            <View style={styles.emptyContainer}>
+              <Ionicons name="car" size={54} color="#B0B5C3" />
+              <AppText
+                title="No rides at this time"
+                textFontWeight
+                textColor={AppColors.BLACK}
+                textSize={1.8}
+                textAlignment="center"
+              />
+            </View>
+          </BoxShadow>
         </View>
       )}
 
       {/* Community Information */}
-      <View style={styles.sectionCard}>
+      <BoxShadow style={[styles.sectionCard, { gap: responsiveWidth(2) }]}>
         <AppText
           title="Community Information"
           textFontWeight
-          textSize={1.7}
+          textSize={2}
           textAlignment="center"
         />
-        <LineBreak space={1} />
         <View style={styles.infoRow}>
           <AppText title="Community Code" textFontWeight textSize={1.7} />
-          <View style={styles.codeBox}>
-            <AppText title="WKDR2X" textFontWeight textSize={1.7} />
-          </View>
+          <TouchableOpacity
+            style={styles.codeBox}
+            activeOpacity={0.7}
+            onLongPress={handleCopyCode}
+          >
+            <AppText title={communityData?.inviteCode || 'NA'} textFontWeight textSize={1.7} />
+          </TouchableOpacity>
         </View>
         <View style={styles.infoRow}>
           <AppText title="Total Members" textSize={1.7} />
-          <AppText title="1" textFontWeight textSize={1.7} />
+          <AppText title={communityData?.members?.length ?? 'NA'} textFontWeight textSize={1.7} />
         </View>
         <View style={styles.infoRow}>
           <AppText title="Active Rides" textSize={1.7} />
@@ -242,23 +334,21 @@ const AdminPanel = () => {
         </View>
         <View style={styles.infoRow}>
           <AppText title="Pending Requests" textSize={1.7} />
-          <AppText title="0" textFontWeight textSize={1.7} />
+          <AppText title={communityData?.pendingRequests?.length ?? 'NA'} textFontWeight textSize={1.7} />
         </View>
-      </View>
-    </ScrollView>
+      </BoxShadow>
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#F5F6FA',
+    backgroundColor: AppColors.disable,
     borderRadius: 16,
-    marginHorizontal: responsiveWidth(4),
-    marginTop: responsiveHeight(2),
-    marginBottom: responsiveHeight(2),
-    padding: 4,
-    gap: 4,
+    marginVertical: responsiveHeight(1.5),
+    padding: responsiveWidth(0.5),
+    gap: responsiveWidth(0.5),
   },
   tabBtn: {
     flex: 1,
@@ -276,23 +366,17 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     backgroundColor: AppColors.WHITE,
-    borderRadius: 16,
-    marginHorizontal: responsiveWidth(4),
+    borderRadius: responsiveWidth(3),
     marginBottom: responsiveHeight(2),
-    padding: responsiveWidth(4),
-    shadowColor: '#050A30',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    padding: responsiveWidth(2),
   },
   requestCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#0D7CF4',
-    borderRadius: 12,
+    borderRadius: responsiveWidth(2),
     padding: 12,
-    marginBottom: 12,
+    // marginBottom: 12,
     gap: 5,
   },
   avatarCircle: {
@@ -304,20 +388,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 8,
   },
+  avatarImage: {
+    width: responsiveWidth(12),
+    height: responsiveWidth(12),
+    borderRadius: responsiveWidth(10),
+  },
   approveBtn: {
     backgroundColor: '#3AC569',
     borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 18,
+    height: responsiveWidth(7),
+    width: responsiveWidth(20),
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 2,
   },
   denyBtn: {
     backgroundColor: '#F44336',
     borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 18,
+    height: responsiveWidth(7),
+    width: responsiveWidth(20),
+    justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: responsiveHeight(4),
   },
   infoRow: {
     flexDirection: 'row',
@@ -327,7 +423,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    marginBottom: 8,
   },
   codeBox: {
     backgroundColor: AppColors.WHITE,

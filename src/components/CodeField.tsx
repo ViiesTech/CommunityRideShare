@@ -7,8 +7,12 @@ import { responsiveFontSize, responsiveHeight, responsiveWidth } from '../utils/
 
 const CELL_COUNT = 4;
 
-const FieldCode: React.FC = () => {
-    const [value, setValue] = useState('');
+interface FieldCodeProps {
+    value: string;
+    setValue: (val: string) => void;
+}
+
+const FieldCode: React.FC<FieldCodeProps> = ({ value, setValue }) => {
     const ref = useBlurOnFulfill({ value, cellCount: CELL_COUNT });
     const [props, getCellOnLayoutHandler] = useClearByFocusCell({
         value,
@@ -78,7 +82,7 @@ const styles = StyleSheet.create({
     },
     cellRoot: {
         width: responsiveWidth(15),
-        height: responsiveHeight(8),
+        height: responsiveWidth(15),
         justifyContent: 'center',
         alignItems: 'center',
         borderColor: AppColors.BLACK,

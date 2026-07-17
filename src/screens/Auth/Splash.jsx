@@ -1,183 +1,128 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
-  Image,
-  SafeAreaView,
-  StatusBar,
+  Dimensions,
+  Easing,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import AppColors from '../../utils/AppColors';
-import { AppImages } from '../../assets/images';
-import {
-  responsiveHeight,
-  responsiveWidth,
-} from '../../utils/Responsive_Dimensions';
 import { useNavigation } from '@react-navigation/native';
+import Wrapper from '../../components/Wrapper';
+import AppColors from '../../utils/AppColors';
+
+const { width, height } = Dimensions.get('window');
+const CIRCLE_SIZE = 132;
 
 const Splash = () => {
   const nav = useNavigation();
-  const scale = useRef(new Animated.Value(0.6)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(30)).current;
-  const pulse = useRef(new Animated.Value(0)).current;
+  const circleScale = useRef(new Animated.Value(0.2)).current;
+  const circleOpacity = useRef(new Animated.Value(0)).current;
+  const logoScale = useRef(new Animated.Value(0.9)).current;
+
+  const expandedScale = useMemo(() => {
+    const screenDiagonal = Math.sqrt(width * width + height * height);
+    return screenDiagonal / CIRCLE_SIZE + 0.4;
+  }, []);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(scale, {
-        toValue: 1,
-        friction: 4,
-        tension: 120,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.spring(translateY, {
-        toValue: 0,
-        friction: 5,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [opacity, scale, translateY]);
-
-  useEffect(() => {
-    const pulseLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
+    const introAnimation = Animated.sequence([
+      Animated.parallel([
+        Animated.timing(circleOpacity, {
           toValue: 1,
-          duration: 1500,
+          duration: 180,
           useNativeDriver: true,
         }),
-        Animated.timing(pulse, {
-          toValue: 0,
-          duration: 0,
+        Animated.spring(circleScale, {
+          toValue: 1,
+          friction: 5,
+          tension: 110,
           useNativeDriver: true,
         }),
       ]),
-    );
-    pulseLoop.start();
+      Animated.delay(450),
+      Animated.spring(circleScale, {
+        toValue: 0.92,
+        friction: 4,
+        tension: 130,
+        useNativeDriver: true,
+      }),
+      Animated.parallel([
+        Animated.spring(circleScale, {
+          toValue: expandedScale,
+          friction: 7,
+          tension: 55,
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoScale, {
+          toValue: 1.05,
+          duration: 520,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+    ]);
+
+    introAnimation.start();
+
+    const navTimer = setTimeout(() => {
+      nav.replace('OnBoarding');
+    }, 3000);
+
     return () => {
-      pulseLoop.stop();
+      introAnimation.stop();
+      clearTimeout(navTimer);
     };
-  }, [pulse]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      nav.replace('SplashFullScreen');
-    }, 2400);
-    return () => clearTimeout(timeout);
-  }, [nav]);
-
-  const pulseScale = pulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.18],
-  });
+  }, [circleOpacity, circleScale, expandedScale, logoScale, nav]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={AppColors.WHITE} />
-      <View style={styles.backdrop}>
-        <View style={styles.decorationTop} />
-        <View style={styles.decorationBottom} />
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.pulseHalo, { transform: [{ scale: pulseScale }] }]}
-        />
+    <Wrapper
+      edges={[]}
+      statusBarTranslucent
+      statusBarBackgroundColor="transparent"
+      barStyle="dark-content"
+    >
+      <View style={styles.container}>
         <Animated.View
           style={[
-            styles.card,
-            { opacity, transform: [{ scale }, { translateY }] },
+            styles.circle,
+            {
+              opacity: circleOpacity,
+              transform: [{ scale: circleScale }],
+            },
           ]}
-        >
-          <View style={styles.logoWrapper}>
-            <Image source={AppImages.roundedImg} style={styles.logo} />
-          </View>
-          <Text style={styles.brand}>Community RideShare</Text>
-          <Text style={styles.tagline}>Commute smarter, together.</Text>
+        />
+        <Animated.View style={[styles.logo, { transform: [{ scale: logoScale }] }]}>
+          <Text style={styles.logoText}>Community</Text>
+          <Text style={styles.logoText}>Ride-Share</Text>
         </Animated.View>
       </View>
-    </SafeAreaView>
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: AppColors.WHITE,
-  },
-  backdrop: {
-    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: AppColors.WHITE,
   },
-  decorationTop: {
+  circle: {
     position: 'absolute',
-    top: -responsiveHeight(12),
-    right: -responsiveWidth(15),
-    width: responsiveWidth(60),
-    height: responsiveWidth(60),
-    backgroundColor: AppColors.lightThemeColor,
-    borderRadius: responsiveWidth(30),
-    opacity: 0.3,
-  },
-  decorationBottom: {
-    position: 'absolute',
-    bottom: -responsiveHeight(15),
-    left: -responsiveWidth(20),
-    width: responsiveWidth(70),
-    height: responsiveWidth(70),
-    backgroundColor: AppColors.lightGreenColor,
-    borderRadius: responsiveWidth(35),
-    opacity: 0.25,
-  },
-  pulseHalo: {
-    position: 'absolute',
-    width: responsiveWidth(75),
-    height: responsiveWidth(75),
-    borderRadius: responsiveWidth(37.5),
-    backgroundColor: AppColors.lightThemeColor,
-    opacity: 0.25,
-  },
-  card: {
-    width: responsiveWidth(78),
-    paddingVertical: responsiveHeight(5),
-    paddingHorizontal: responsiveWidth(6),
-    borderRadius: 28,
-    backgroundColor: AppColors.WHITE,
-    alignItems: 'center',
-    shadowColor: '#0A2A4B',
-    shadowOffset: { width: 0, height: 15 },
-    shadowOpacity: 0.15,
-    shadowRadius: 25,
-    elevation: 12,
-    gap: responsiveHeight(2),
-  },
-  logoWrapper: {
-    width: responsiveWidth(38),
-    height: responsiveWidth(38),
-    borderRadius: responsiveWidth(19),
-    overflow: 'hidden',
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
+    backgroundColor: AppColors.ThemeColor,
   },
   logo: {
-    width: '100%',
-    height: '100%',
-    borderRadius: responsiveWidth(19),
+    alignItems: 'center',
   },
-  brand: {
-    fontSize: responsiveWidth(5),
+  logoText: {
+    color: AppColors.WHITE,
+    fontSize: 21,
     fontWeight: '700',
-    color: AppColors.BLACK,
-    textAlign: 'center',
-  },
-  tagline: {
-    fontSize: responsiveWidth(3.5),
-    color: AppColors.DARKGRAY,
-    textAlign: 'center',
+    lineHeight: 23,
   },
 });
 

@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Image,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -17,16 +16,17 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from '../../../utils/Responsive_Dimensions';
-
-const stats = [
-  { id: 'rides', label: 'Total ride', value: '1,260' },
-  { id: 'rating', label: 'Rating', value: '4.8', subText: '(296)', icon: AppIcons.starFilled },
-  { id: 'passenger', label: 'As passenger', value: '846' },
-];
+import Wrapper from '../../../components/Wrapper';
+import AppHeader from '../../../components/AppHeader';
+import { selectCurrentUser } from '../../../redux/slices/authSlice';
+import { useSelector } from 'react-redux';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const Profile = () => {
+  const user = useSelector(selectCurrentUser);
+  console.log('Current user data:', user);
   const navigation = useNavigation();
-  const progress = 0.7;
+  const progress = user?.profileCompletionPercent / 100; // Example progress value (0 to 1)
   const strokeWidth = 4;
   const radius = 60;
   const circumference = 2 * Math.PI * radius;
@@ -39,26 +39,23 @@ const Profile = () => {
   }, [navigation]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => navigation.goBack()}
-          >
-            <SVGXml icon={AppIcons.arrowLeft} width={18} height={18} />
-          </TouchableOpacity>
-          <AppText title="Profile" textColor={AppColors.BLACK} textFontWeight textSize={2} />
-          <View style={styles.headerSpacer} />
-        </View>
-
+    <Wrapper style={styles.safeArea} paddingHorizontal={false}>
+      <AppHeader title="Profile" paddingHorizontal={true} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         <View style={styles.avatarSection}>
           <View style={styles.avatarRing}>
-            <Image
-              source={{ uri: 'https://i.pravatar.cc/300?img=47' }}
-              style={styles.avatar}
-              resizeMode="cover"
-            />
+            {
+              user?.avatarUrl ? (<Image
+                source={{ uri: user?.avatarUrl }}
+                style={styles.avatar}
+                resizeMode="cover"
+              />) : (
+                <Ionicons
+                  name="person-sharp"
+                  size={responsiveWidth(25)}
+                  color={AppColors.appBlue}
+                />)
+            }
             <Svg
               width={(radius + strokeWidth) * 2}
               height={(radius + strokeWidth) * 2}
@@ -87,123 +84,133 @@ const Profile = () => {
             </Svg>
           </View>
           <AppText
-            title="Anastasia Sya"
+            title={user?.name ? user?.name : 'NA'}
             textColor={AppColors.BLACK}
             textFontWeight
-            textSize={2.6}
-          />
-          <AppText
-            title="FLORIDA, US"
-            textColor={AppColors.DARKGRAY}
-            textSize={1.55}
-            textFontWeight
-          />
+            textSize={2.6} />
         </View>
-
-        <View style={styles.progressCard}>
-          <View style={styles.progressShell}>
-            <Svg viewBox="0 0 100 100" style={styles.progressRing}>
-              <Circle
-                cx="50"
-                cy="50"
-                r={badgeRadius}
-                stroke="#111111"
-                strokeWidth={6}
-                strokeDasharray={`${badgeCircumference}`}
-                strokeDashoffset={badgeCircumference * (1 - progress)}
-                strokeLinecap="round"
-                fill="none"
-                rotation="-90"
-                origin="50,50"
-              />
-            </Svg>
-            <View style={styles.progressBadge}>
-              <AppText title="70%" textColor={AppColors.GRAY} textSize={1.5} textFontWeight />
+        {
+          (user?.profileCompletionPercent ?? 0) < 100 && (
+            <View style={styles.progressCard}>
+              <View style={styles.progressShell}>
+                <Svg viewBox="0 0 100 100" style={styles.progressRing}>
+                  <Circle
+                    cx="50"
+                    cy="50"
+                    r={badgeRadius}
+                    stroke="#111111"
+                    strokeWidth={6}
+                    strokeDasharray={`${badgeCircumference}`}
+                    strokeDashoffset={badgeCircumference * (1 - progress)}
+                    strokeLinecap="round"
+                    fill="none"
+                    rotation="-90"
+                    origin="50,50"
+                  />
+                </Svg>
+                <View style={styles.progressBadge}>
+                  <AppText title={`${Math.round(user?.profileCompletionPercent || 0)}%`} textColor={AppColors.GRAY} textSize={1.5} textFontWeight />
+                </View>
+              </View>
+              <View style={styles.progressTextBlock}>
+                <AppText
+                  title="Complete your profile"
+                  textColor={AppColors.WHITE}
+                  textSize={1.85}
+                  numberOfLines={1}
+                />
+                <AppText
+                  title="to stand out"
+                  textColor="#CFEAFF"
+                  textSize={1.55}
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.editButton}
+                activeOpacity={0.8}
+                onPress={handleEditProfile}>
+                <AppText
+                  title="Edit Profile"
+                  textColor={AppColors.WHITE}
+                  textAlignment="center"
+                />
+              </TouchableOpacity>
             </View>
-          </View>
-          <View style={styles.progressTextBlock}>
-            <AppText
-              title="Complete your profile"
-              textColor={AppColors.WHITE}
-              textSize={1.85}
-              numberOfLines={1}
-            />
-            <AppText
-              title="to stand out"
-              textColor="#CFEAFF"
-              textSize={1.55}
-            />
-          </View>
-          <TouchableOpacity
-            style={styles.editButton}
-            activeOpacity={0.8}
-            onPress={handleEditProfile}
-          >
-            <AppText
-              title="Edit Profile"
-              textColor={AppColors.WHITE}
-              textAlignment="center"
-            />
-          </TouchableOpacity>
-        </View>
+          )}
 
         <View style={styles.statsRow}>
-          {stats.map(item => (
-            <View key={item.id} style={styles.statCard}>
-              {item.icon ? (
-                <View style={styles.ratingRow}>
-                  <SVGXml icon={item.icon} width={16} height={16} />
-                  <AppText
-                    title={item.value}
-                    textColor={AppColors.BLACK}
-                    textFontWeight
-                    textSize={2}
-                  />
-                </View>
-              ) : (
-                <AppText
-                  title={item.value}
-                  textColor={AppColors.BLACK}
-                  textFontWeight
-                  textSize={2.6}
-                />
-              )}
-              {item.subText ? (
-                <AppText title={item.subText} textColor={AppColors.GRAY} textSize={1.3} />
-              ) : null}
+          <View style={styles.statCard}>
+            <AppText
+              title={user?.ride?.totalRide || 0}
+              textColor={AppColors.BLACK}
+              textFontWeight
+              textSize={2.6}
+            />
+            <AppText
+              title={"Total ride"}
+              textColor={AppColors.DARKGRAY}
+              textSize={1.45}
+            />
+          </View>
+
+          <View style={styles.statCard}>
+            <View style={styles.ratingRow}>
+              <SVGXml icon={AppIcons.starFilled} width={responsiveWidth(4.5)} height={responsiveWidth(4.5)} />
               <AppText
-                title={item.label}
-                textColor={AppColors.DARKGRAY}
-                textSize={1.45}
+                title={user?.averageRating || 0}
+                textColor={AppColors.BLACK}
+                textFontWeight
+                textSize={2.6}
               />
             </View>
-          ))}
+            <AppText title={`(${user?.reviewCount || 0})`} textColor={AppColors.GRAY} textSize={1.45} />
+          </View>
+          <View style={styles.statCard}>
+            <AppText
+              title={user?.ride?.passenger || 0}
+              textColor={AppColors.BLACK}
+              textFontWeight
+              textSize={2.6}
+            />
+            <AppText
+              title={"As passenger"}
+              textColor={AppColors.DARKGRAY}
+              textSize={1.45}
+            />
+          </View>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <AppText title="About" textColor={AppColors.BLACK} textFontWeight textSize={1.8} />
-        </View>
-        <AppText
-          title="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
-          textColor={AppColors.GRAY}
-          textSize={1.6}
-          lineHeight={2.4}
-        />
+        {user?.about ? (
+          <>
+            <View style={styles.sectionHeader}>
+              <AppText title="About" textColor={AppColors.BLACK} textFontWeight textSize={1.8} />
+            </View>
+            <AppText
+              title={user?.about}
+              textColor={AppColors.GRAY}
+              textSize={1.6}
+              lineHeight={2.4}
+            />
+          </>
+        ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: AppColors.WHITE,
   },
   content: {
-    paddingHorizontal: responsiveWidth(6),
-    paddingBottom: responsiveHeight(8),
-    paddingTop: responsiveHeight(2),
+    paddingHorizontal: responsiveWidth(5),
+    paddingTop: responsiveWidth(3),
+    backgroundColor: AppColors.grayBG,
+    flexGrow: 1,
     gap: responsiveHeight(3),
+    // paddingHorizontal: responsiveWidth(5)
+    // paddingTop: responsiveHeight(2),
+    // paddingHorizontal: responsiveWidth(6),
+    // paddingBottom: responsiveHeight(8),
   },
   headerRow: {
     flexDirection: 'row',
@@ -227,17 +234,17 @@ const styles = StyleSheet.create({
     gap: responsiveHeight(1),
   },
   avatarRing: {
-    width: 128,
-    height: 128,
+    width: responsiveWidth(32),
+    height: responsiveWidth(32),
     borderRadius: 64,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
   avatar: {
-    width: 112,
-    height: 112,
-    borderRadius: 56,
+    width: responsiveWidth(31),
+    height: responsiveWidth(31),
+    borderRadius: responsiveWidth(40),
   },
   progressSvg: {
     position: 'absolute',
@@ -283,13 +290,12 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: responsiveWidth(3),
+    gap: responsiveWidth(3)
   },
   statCard: {
     flex: 1,
     alignItems: 'center',
     gap: responsiveHeight(0.4),
-    backgroundColor: '#F8F9FC',
     borderRadius: 18,
     paddingVertical: responsiveHeight(2),
   },

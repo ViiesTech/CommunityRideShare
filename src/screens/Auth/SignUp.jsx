@@ -23,181 +23,157 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from '../../utils/Responsive_Dimensions';
-import { AppImages } from '../../assets/images';
 import SocialAuthButton from '../../components/SocialAuthButton';
+import Wrapper from '../../components/Wrapper';
+import Feather from 'react-native-vector-icons/Feather';
+import AppLogo from '../../components/AppLogo';
+import { useRegisterMutation } from '../../redux/api/apiSlice';
+import { showToast } from '../../utils/toast';
 
 const SignUp = () => {
+  const [register, { isLoading }] = useRegisterMutation();
   const [state, setState] = useState({
     name: '',
     email: '',
     number: '',
     password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const nav = useNavigation();
-  const cardOpacity = useRef(new Animated.Value(0)).current;
-  const cardTranslate = useRef(new Animated.Value(30)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(cardOpacity, {
-        toValue: 1,
-        duration: 550,
-        useNativeDriver: true,
-      }),
-      Animated.spring(cardTranslate, {
-        toValue: 0,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [cardOpacity, cardTranslate]);
 
   const onChangeText = (key, value) => {
     setState(prev => ({ ...prev, [key]: value }));
   };
 
   const handleSignUp = async () => {
-    nav.replace('Login');
+    try {
+      if (Object.values(state).some(v => !v)) {
+        return showToast('error', 'Account Creation Failed', 'All fields are required');
+      }
+      const response = await register(state).unwrap();
+      if (response.success) {
+        showToast(
+          'success',
+          'Congratulations',
+          response?.message || 'Account Creation successful.',
+          () => nav.navigate('VerifyAccount', { email: response.data.userEmail || state.email }));
+      } else {
+        showToast(
+          'error',
+          response?.errorCode || 'Account Creation Failed',
+          response?.message || 'Something went wrong'
+        );
+      }
+    } catch (err) {
+      if (err?.data?.errorCode === 'USER_NOT_VERIFIED') {
+        showToast(
+          'info',
+          'Verification Required',
+          err?.data?.message || 'Please verify your email address.',
+          () => nav.navigate('VerifyAccount', { email: state.email })
+        );
+      } else {
+        showToast(
+          'error',
+          err?.data?.errorCode || 'Login Failed',
+          err?.data?.message || 'Something went wrong'
+        );
+      }
+    }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={AppColors.WHITE} />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          bounces={false}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.heroSection}>
-            <View style={styles.stepRow}>
-              {[0, 1, 2].map(step => (
-                <View
-                  key={step}
-                  style={[
-                    styles.stepDot,
-                    step === 0 && styles.stepDotActive,
-                  ]}
-                />
-              ))}
-              <AppText
-                title="Account setup"
-                textColor={AppColors.darkBlue}
-                textSize={1.4}
-              />
-            </View>
-            <AppText
-              title="Create your carpool identity"
-              textColor={AppColors.BLACK}
-              textSize={3}
-              textFontWeight
+    <Wrapper style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        bounces={false}
+        showsVerticalScrollIndicator={false}      
+        keyboardShouldPersistTaps="handled">
+        <AppLogo style={{ marginVertical: responsiveHeight(5) }} />
+        <View style={styles.card} >
+          <AppText title="Create an account" textSize={4} textFontWeight textAlignment='center' />
+          <AppTextInput
+            inputPlaceHolder={'Full name'}
+            inputWidth={84}
+            value={state.name}
+            onChangeText={text => onChangeText('name', text)}
+            containerBg={AppColors.inputBgColor}
+            borderWidth={0}
+          />
+          <AppTextInput
+            inputPlaceHolder={'Email address'}
+            inputWidth={84}
+            value={state.email}
+            onChangeText={text => onChangeText('email', text)}
+            containerBg={AppColors.inputBgColor}
+            borderWidth={0}
+          />
+          <AppTextInput
+            inputPlaceHolder={'Phone number'}
+            inputWidth={84}
+            value={state.number}
+            onChangeText={text => onChangeText('number', text)}
+            containerBg={AppColors.inputBgColor}
+            borderWidth={0}
+            keyboardType="phone-pad"
+          />
+          <AppTextInput
+            inputPlaceHolder={'Password'}
+            inputWidth={75}
+            secureTextEntry={!showPassword}
+            value={state.password}
+            onChangeText={text => onChangeText('password', text)}
+            containerBg={AppColors.inputBgColor}
+            borderWidth={0}
+            rightIcon={
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                <Feather name={showPassword ? 'eye' : 'eye-off'} size={responsiveWidth(6)} color={AppColors.DARKGRAY} />
+              </TouchableOpacity>
+            }
+          />
+          <AppButton
+            title={'Create account'}
+            bgColor={AppColors.BLACK}
+            handlePress={handleSignUp}
+            loading={isLoading}
+          />
+          <AppText textFontWeight textSize={1.7} title="Or Login With" textColor={AppColors.darkGray} textAlignment='center' lineHeight={3} />
+          <View style={styles.socialWrapper}>
+            <SocialAuthButton
+              label="Continue with Facebook"
+              backgroundColor={AppColors.BLUE}
+              borderColor={AppColors.BLUE}
+              textColor={AppColors.WHITE}
+              icon={<SVGXml icon={AppIcons.facebook_white} width={15} height={15} />}
             />
-            <AppText
-              title="Invite-only communities mean safer, smarter rides."
-              textColor={AppColors.DARKGRAY}
-              textSize={1.8}
-              lineHeight={2.6}
+            <SocialAuthButton
+              label="Continue with Google"
+              icon={<SVGXml icon={AppIcons.google_black} width={15} height={15} />}
             />
-            <Image source={AppImages.roundedImg} style={styles.heroImage} />
           </View>
-          <Animated.View
-            style={[styles.card, { opacity: cardOpacity, transform: [{ translateY: cardTranslate }] }]}
-          >
-            <AppTextInput
-              inputPlaceHolder={'Full name'}
-              inputWidth={80}
-              value={state.name}
-              onChangeText={text => onChangeText('name', text)}
-              containerBg={AppColors.inputBgColor}
-              borderWidth={0}
-            />
-            <AppTextInput
-              inputPlaceHolder={'Email address'}
-              inputWidth={80}
-              value={state.email}
-              onChangeText={text => onChangeText('email', text)}
-              containerBg={AppColors.inputBgColor}
-              borderWidth={0}
-            />
-            <AppTextInput
-              inputPlaceHolder={'Phone number'}
-              inputWidth={80}
-              value={state.number}
-              onChangeText={text => onChangeText('number', text)}
-              containerBg={AppColors.inputBgColor}
-              borderWidth={0}
-              keyboardType="phone-pad"
-            />
-            <AppTextInput
-              inputPlaceHolder={'Password'}
-              inputWidth={80}
-              secureTextEntry={true}
-              value={state.password}
-              onChangeText={text => onChangeText('password', text)}
-              containerBg={AppColors.inputBgColor}
-              borderWidth={0}
-            />
-            <View style={styles.policyCopy}>
-              <AppText
-                title="By continuing you agree to our Terms & Privacy Policy."
-                textColor={AppColors.DARKGRAY}
-                textSize={1.4}
-                lineHeight={2.2}
-              />
-            </View>
-            <AppButton
-              title={'Create account'}
-              bgColor={AppColors.ThemeColor}
-              handlePress={handleSignUp}
-              buttoWidth={75}
-            />
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <AppText title="or" textColor={AppColors.GRAY} />
-              <View style={styles.dividerLine} />
-            </View>
-            <View style={styles.socialWrapper}>
-              <SocialAuthButton
-                label="Continue with Facebook"
-                backgroundColor={AppColors.BLUE}
-                borderColor={AppColors.BLUE}
-                textColor={AppColors.WHITE}
-                icon={<SVGXml icon={AppIcons.facebook_white} width={15} height={15} />}
-              />
-              <SocialAuthButton
-                label="Continue with Google"
-                icon={<SVGXml icon={AppIcons.google_black} width={15} height={15} />}
-              />
-            </View>
-          </Animated.View>
-          <View style={styles.footer}>
-            <AppText
-              title={`Already have an account?`}
-              textColor={AppColors.DARKGRAY}
-              textSize={1.6}
-            />
-            <TouchableOpacity onPress={() => nav.navigate('Login')}>
-              <AppText title={'Login'} textColor={AppColors.ThemeColor} textFontWeight />
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </View>
+        <View style={styles.footer}>
+          <AppText
+            title="Already have an account?"
+            textColor={AppColors.DARKGRAY}
+            textSize={1.5}
+          />
+          <TouchableOpacity onPress={() => nav.navigate('Login')}>
+            <AppText underline textFontWeight title={'Login'} textColor={AppColors.BLACK} textSize={1.7} />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+      {/* </KeyboardAvoidingView> */}
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: AppColors.WHITE,
+
   },
   scrollContent: {
-    paddingHorizontal: responsiveWidth(6),
-    paddingVertical: responsiveHeight(4),
-    gap: responsiveHeight(3),
+    flexGrow: 1,
   },
   heroSection: {
     backgroundColor: AppColors.lightGreenColor,
@@ -228,15 +204,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   card: {
-    backgroundColor: AppColors.WHITE,
-    borderRadius: 28,
-    padding: responsiveWidth(6),
-    gap: responsiveHeight(2),
-    shadowColor: '#050A30',
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 15 },
-    elevation: 8,
+    gap: responsiveHeight(1.5),
   },
   policyCopy: {
     backgroundColor: AppColors.inputBgColor,
@@ -261,6 +229,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
+    marginTop: 'auto',
   },
 });
 

@@ -1,14 +1,13 @@
 import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
-  Animated,
-  Easing,
   Image,
-  Modal,
-  Pressable,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { DrawerContentScrollView } from '@react-navigation/drawer';
 import AppColors from '../utils/AppColors';
 import AppText from './AppText';
 import SVGXml from './SVGXML';
@@ -17,277 +16,247 @@ import {
   responsiveWidth,
 } from '../utils/Responsive_Dimensions';
 import { AppIcons } from '../assets/icons';
-
-const drawerWidth = responsiveWidth(72);
+import { persistor, store } from '../redux/store';
+import { selectCurrentUser } from '../redux/slices/authSlice';
 
 const primaryMenu = [
   { id: 'home', label: 'Home', icon: AppIcons.fourBlocks },
-  { id: 'myRide', label: 'My Ride', icon: AppIcons.ride },
+  { id: 'myRide', label: 'My ride', icon: AppIcons.ride },
   { id: 'settings', label: 'Settings', icon: AppIcons.setting },
   { id: 'help', label: 'Help', icon: AppIcons.help },
 ];
 
-const SideMenuDrawer = ({ visible, onClose, onSelect }) => {
-  const animation = React.useRef(new Animated.Value(0)).current;
-  const [portalVisible, setPortalVisible] = React.useState(false);
 
-  React.useEffect(() => {
-    if (visible) {
-      setPortalVisible(true);
-    }
+const SideMenuDrawer = (props) => {
+  const dispatch = useDispatch();
+  const user = useSelector(selectCurrentUser);
+  const logout = async () => {
+    // 0) Drawer close pehle
+    // props.navigation.closeDrawer();
 
-    Animated.timing(animation, {
-      toValue: visible ? 1 : 0,
-      duration: 250,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
-    }).start(() => {
-      if (!visible) {
-        setPortalVisible(false);
-      }
-    });
-  }, [visible, animation]);
+    // // 1) Immediately Redux clear (UI will switch to NA quickly)
+    store.dispatch({ type: 'RESET_STORE' });
 
-  const translateX = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-drawerWidth, 0],
-  });
+    // // 2) Persisted storage purge (async)
+    await persistor.purge();
 
-  const overlayOpacity = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 0.45],
-  });
+    // // 3) Auth stack pe le jao
+    // props.navigation.reset({
+    //   index: 0,
+    //   routes: [{ name: 'Auth' }],
+    // });
+  };
 
   const handleSelect = id => {
-    if (onSelect) {
-      onSelect(id);
+    if (id === 'logout') {
+      logout()
+      return;
+    }
+
+    // Tab screens are inside Drawer > MainTabs
+    const tabScreens = { home: 'Home' };
+    // Stack screens are in parent HomeStack (outside Drawer)
+    const stackScreens = { myRide: 'Calendar', settings: 'Settings', help: 'FAQs', editProfile: 'EditProfile' };
+
+    if (tabScreens[id]) {
+      props.navigation.navigate('MainTabs', { screen: tabScreens[id] });
+    } else if (stackScreens[id]) {
+      props.navigation.getParent()?.navigate(stackScreens[id]);
+    }
+
+    // Auto-close drawer after selection
+    if (id !== 'logout') {
+      props.navigation.closeDrawer();
     }
   };
 
-  if (!portalVisible) {
-    return null;
-  }
-
   return (
-    <Modal transparent visible={portalVisible} animationType="none" onRequestClose={onClose}>
-      <View
-        pointerEvents={visible ? 'auto' : 'none'}
-        style={[StyleSheet.absoluteFillObject, styles.overlayRoot]}
-      >
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
-        <Animated.View style={[styles.overlay, { opacity: overlayOpacity }]} />
-      </Pressable>
+    <DrawerContentScrollView
+      {...props}
+      contentContainerStyle={styles.drawer}
+      scrollEnabled={false}
+    >
+      <View style={styles.container}>
 
-      <Animated.View
-        style={[styles.drawer, { transform: [{ translateX }] }]}
-      >
-        <TouchableOpacity
-          style={styles.drawerHeader}
-          activeOpacity={0.85}
-          onPress={() => handleSelect('editProfile')}
-        >
-          <View style={styles.headerLeft}>
-            <View style={styles.avatarBadge}>
-              <Image
-                source={{ uri: 'https://i.pravatar.cc/150?img=16' }}
-                style={styles.avatarImage}
-                resizeMode="cover"
-              />
-            </View>
-            <View style={styles.headerTextBlock}>
-              <AppText
-                title="Alex Morgan"
-                textColor={AppColors.WHITE}
-                textFontWeight
-                textSize={1.9}
-              />
-              <AppText
-                title="Edit Profile"
-                textColor="#CFE5FF"
-                textSize={1.3}
-              />
-            </View>
-          </View>
-          <View style={styles.headerArrowWrap}>
-            <SVGXml icon={AppIcons.arrowRightWhite} width={16} height={16} />
-          </View>
-        </TouchableOpacity>
-
-        <View style={styles.sectionDivider} />
-
-        <View style={styles.menuList}>
-          {primaryMenu.map(item => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.menuRow}
-              activeOpacity={0.85}
-              onPress={() => handleSelect(item.id)}
-            >
-              <View style={styles.iconWrap}>
-                <SVGXml icon={item.icon} width={22} height={22} />
+        {/* Top Section */}
+        <View>
+          {/* Header */}
+          <TouchableOpacity
+            style={styles.headerArea}
+            activeOpacity={0.85}
+            onPress={() => handleSelect('editProfile')}
+          >
+            <View style={styles.headerLeft}>
+              <View style={styles.avatarIconCircle}>
+                {
+                  user?.avatarUrl ? (
+                    <Image
+                      source={{ uri: user?.avatarUrl }}
+                      style={styles.avatarImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Ionicons
+                      name="person-sharp"
+                      size={responsiveHeight(3.5)}
+                      color={AppColors.WHITE}
+                    />
+                  )
+                }
               </View>
-              <AppText
-                title={item.label}
-                textColor={AppColors.BLACK}
-                textFontWeight
-                textSize={1.7}
-              />
-            </TouchableOpacity>
-          ))}
+              <View style={styles.headerTextBlock}>
+                <AppText
+                  title={user?.name ? user?.name : 'NA'}
+                  textColor={AppColors.BLACK}
+                  textFontWeight
+                  textSize={1.9}
+                />
+                <AppText
+                  title="Edit Profile"
+                  textColor="#A1A4B2" // Light gray color from image
+                  textSize={1.4}
+                />
+              </View>
+            </View>
+            <View style={styles.arrowWrap}>
+              <SVGXml icon={AppIcons.arrowRight} width={18} height={18} />
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          {/* Menu Items */}
+          <View style={styles.menuList}>
+            {primaryMenu.map((item, index) => (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.menuRow, index === 0 && { marginTop: 0 }]}
+                activeOpacity={0.85}
+                onPress={() => handleSelect(item.id)}
+              >
+                <View style={styles.iconWrap}>
+                  <SVGXml icon={item.icon} width={24} height={24} />
+                </View>
+                <AppText
+                  title={item.label}
+                  textColor={'#333333'}
+                  textFontWeight
+                  textSize={1.7}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        <View style={styles.logoutDivider} />
+        {/* Bottom Section */}
+        <View>
+          <View style={styles.divider} />
 
-        <View style={styles.logoutBlock}>
           <TouchableOpacity
             style={styles.logoutButton}
             activeOpacity={0.85}
             onPress={() => handleSelect('logout')}
           >
-            <View style={styles.logoutIconWrap}>
-              <SVGXml icon={AppIcons.logout} width={18} height={18} />
+            <View style={styles.logoutLeft}>
+              <View style={styles.logoutIconCircle}>
+                <SVGXml icon={AppIcons.logout} width={20} height={20} />
+              </View>
+              <AppText
+                title="Logout"
+                textColor={AppColors.BLACK}
+                textFontWeight
+                textSize={1.8}
+              />
             </View>
-            <AppText
-              title="Logout"
-              textColor={AppColors.WHITE}
-              textFontWeight
-              textSize={1.6}
-            />
-            <View style={styles.logoutArrowWrap}>
-              <SVGXml icon={AppIcons.arrowRightWhite} width={14} height={14} />
+            <View style={styles.arrowWrap}>
+              <SVGXml icon={AppIcons.arrowRight} width={18} height={18} />
             </View>
           </TouchableOpacity>
         </View>
-      </Animated.View>
+
       </View>
-    </Modal>
+    </DrawerContentScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#0B1A39',
-  },
-  overlayRoot: {
-    zIndex: 999,
-    elevation: 20,
-  },
   drawer: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: drawerWidth,
+    flex: 1,
     backgroundColor: AppColors.WHITE,
-    paddingHorizontal: responsiveWidth(6),
-    paddingTop: responsiveHeight(4),
-    paddingBottom: responsiveHeight(5),
-    justifyContent: 'space-between',
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 16,
   },
-  drawerHeader: {
-    backgroundColor: '#0D7CF4',
-    borderRadius: 24,
-    padding: responsiveWidth(4),
+  container: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: responsiveWidth(5),
+    paddingTop: responsiveHeight(2),
+    paddingBottom: responsiveHeight(4),
+  },
+  headerArea: {
     flexDirection: 'row',
-    gap: responsiveWidth(3),
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: responsiveHeight(2),
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsiveWidth(3),
-    flex: 1,
-  },
-  avatarBadge: {
-    width: responsiveWidth(12),
-    height: responsiveWidth(12),
-    borderRadius: responsiveWidth(6),
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
   },
   avatarImage: {
-    width: '100%',
-    height: '100%',
+    width: responsiveHeight(6.5),
+    height: responsiveHeight(6.5),
+    borderRadius: responsiveHeight(3.25),
+  },
+  avatarIconCircle: {
+    width: responsiveHeight(5.5),
+    height: responsiveHeight(5.5),
+    borderRadius: responsiveHeight(3.25),
+    backgroundColor: AppColors.ThemeColor,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTextBlock: {
-    flex: 1,
-  },
-  headerArrowWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
+    marginLeft: responsiveWidth(3.5),
     justifyContent: 'center',
   },
-  sectionDivider: {
-    marginTop: responsiveHeight(2),
-    borderBottomWidth: 1,
-    borderColor: '#D7E2F5',
+  arrowWrap: {
+    opacity: 0.5, // To make the arrow look a bit gray/subtle like in the image
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginVertical: responsiveHeight(2),
   },
   menuList: {
-    marginTop: responsiveHeight(2),
-    gap: responsiveHeight(1.5),
+    marginTop: responsiveHeight(1),
   },
   menuRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: responsiveWidth(4),
-    paddingVertical: responsiveHeight(1.6),
-    borderRadius: 18,
-    paddingHorizontal: responsiveWidth(2),
-    backgroundColor: '#F4F7FF',
+    paddingVertical: responsiveHeight(2),
   },
   iconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#E7F0FF',
-    alignItems: 'center',
+    width: responsiveWidth(10), // Ensures fixed width for icon column
+    alignItems: 'flex-start',
     justifyContent: 'center',
-  },
-  logoutDivider: {
-    marginTop: responsiveHeight(3),
-    borderBottomWidth: 1,
-    borderColor: '#D7E2F5',
-  },
-  logoutBlock: {
-    marginTop: responsiveHeight(2),
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#0B1A39',
-    borderRadius: 24,
-    paddingVertical: responsiveHeight(1.8),
-    paddingHorizontal: responsiveWidth(4),
-    gap: responsiveWidth(2.5),
+    paddingVertical: responsiveHeight(1),
   },
-  logoutIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  logoutLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  logoutArrowWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
+  logoutIconCircle: {
+    width: responsiveHeight(5.5),
+    height: responsiveHeight(5.5),
+    borderRadius: responsiveHeight(2.75),
+    backgroundColor: '#0D7CF4', // Blue color like in the image
     justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: responsiveWidth(4),
   },
 });
 

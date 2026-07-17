@@ -2,6 +2,9 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { responsiveWidth } from '../utils/Responsive_Dimensions';
+import SideMenuDrawer from '../components/SideMenuDrawer';
 import Home from '../screens/PassengerMain/Home/Home';
 import OfferRide from '../screens/PassengerMain/Home/OfferRide';
 import FindRides from '../screens/PassengerMain/Search/FindRides';
@@ -27,11 +30,12 @@ import AdminPanel from './../screens/PassengerMain/AdminPanel/AdminPanel';
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
+const Drawer = createDrawerNavigator();
 
 const tabIconMap = {
   Home: AppIcons.homeTab,
   Search: AppIcons.search,
-  Calendar: AppIcons.tabCalendar,
+  // Calendar: AppIcons.tabCalendar,
   Chat: AppIcons.chatTab,
   Profile: AppIcons.profileTab,
 };
@@ -46,9 +50,24 @@ const tabScreenOptions = ({ route }) => ({
   ),
 });
 
+const DrawerNavigator = () => (
+  <Drawer.Navigator 
+    screenOptions={{ 
+      headerShown: false, 
+      drawerStyle: { width: responsiveWidth(72), backgroundColor: 'transparent' },
+      // Disabling swipe gesture to avoid Reanimated v4 worklet callback error
+      swipeEnabled: false,
+      overlayColor: 'rgba(11, 26, 57, 0.5)',
+    }}
+    drawerContent={(props) => <SideMenuDrawer {...props} />}
+  >
+    <Drawer.Screen name="MainTabs" component={HomeStackScreen} />
+  </Drawer.Navigator>
+);
+
 const PassengerMain = () => (
   <HomeStack.Navigator screenOptions={{ headerShown: false }}>
-    <HomeStack.Screen name="HomeMain" component={HomeStackScreen} />
+    <HomeStack.Screen name="HomeMain" component={DrawerNavigator} />
     <HomeStack.Screen name="OfferRide" component={OfferRide} />
     <HomeStack.Screen name="RiderDetail" component={RiderDetail} />
     <HomeStack.Screen
@@ -60,6 +79,7 @@ const PassengerMain = () => (
     <HomeStack.Screen name="PrivateChat" component={PrivateChat} />
     <HomeStack.Screen name="IncomingCall" component={IncomingCall} />
     <HomeStack.Screen name="GroupChat" component={GroupChat} />
+    <HomeStack.Screen name="Calendar" component={MyRides} />
     <HomeStack.Screen name="EditProfile" component={EditProfile} />
     <HomeStack.Screen name="Settings" component={Settings} />
     <HomeStack.Screen name="Security" component={Security} />
@@ -74,7 +94,7 @@ const HomeStackScreen = () => {
     <Tab.Navigator screenOptions={tabScreenOptions}>
       <Tab.Screen name="Home" component={Home} />
       <Tab.Screen name="Search" component={FindRides} />
-      <Tab.Screen name="Calendar" component={MyRides} />
+      {/* <Tab.Screen name="Calendar" component={MyRides} /> */}
       <Tab.Screen name="Chat" component={Chat} />
       <Tab.Screen name="Profile" component={Profile} />
     </Tab.Navigator>
@@ -130,18 +150,26 @@ const styles = StyleSheet.create({
   },
 });
 
-const TabIcon = ({ icon, focused }) => (
-  <View style={styles.iconStack}>
-    <View style={[styles.iconShell, focused && styles.iconShellActive]}>
-      <SVGXml
-        icon={icon}
-        width={20}
-        height={20}
-        style={focused ? styles.iconActive : styles.iconInactive}
-      />
+const TAB_ACTIVE_COLOR = '#0D7CF4';
+const TAB_INACTIVE_COLOR = '#D1D1D1';
+
+const TabIcon = ({ icon, focused }) => {
+  const color = focused ? TAB_ACTIVE_COLOR : TAB_INACTIVE_COLOR;
+  // Replace hardcoded blue color in SVG string with dynamic color
+  const coloredIcon = icon.replace(/#0D7CF4/g, color);
+
+  return (
+    <View style={styles.iconStack}>
+      <View style={[styles.iconShell, focused && styles.iconShellActive]}>
+        <SVGXml
+          icon={coloredIcon}
+          width={responsiveWidth(7)}
+          height={responsiveWidth(7)}
+        />
+      </View>
+      {focused && <View style={styles.activeDot} />}
     </View>
-    {focused && <View style={styles.activeDot} />}
-  </View>
-);
+  );
+};
 
 export default PassengerMain;

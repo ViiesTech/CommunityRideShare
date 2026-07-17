@@ -64,14 +64,14 @@ const AppTextInput = ({
         flexDirection: 'row',
         backgroundColor: containerBg,
         paddingHorizontal: responsiveWidth(2),
-        paddingVertical: borderBottomWidth ? 0 : paddingVertical ? paddingVertical : 5,
+        paddingVertical: borderBottomWidth ? 0 : paddingVertical ? paddingVertical : 3,
         borderRadius: borderRadius ? borderRadius : 12,
         alignItems: multiline ? 'flex-start' : 'center',
         gap: 5,
         borderWidth: borderBottomWidth ? 0 : borderWidth ? borderWidth : 1,
         borderBottomWidth: borderBottomWidth,
         borderBottomColor: borderBottomColor,
-        borderColor: borderColor ? borderColor : AppColors.DARKGRAY,
+        borderColor: borderColor ? borderColor : AppColors.LIGHTGRAY,
       }}>
       {logo}
 
@@ -80,7 +80,7 @@ const AppTextInput = ({
         value={value}
         onChangeText={onChangeText}
         placeholderTextColor={
-          placeholderTextColor ? placeholderTextColor : AppColors.GRAY
+          placeholderTextColor ? placeholderTextColor : AppColors.darkGray
         }
         style={{
           width: responsiveWidth(inputWidth),

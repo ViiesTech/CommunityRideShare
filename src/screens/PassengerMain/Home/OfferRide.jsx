@@ -21,18 +21,22 @@ import {
   responsiveHeight,
   responsiveWidth,
 } from '../../../utils/Responsive_Dimensions';
+import Wrapper from '../../../components/Wrapper';
+import AppHeader from '../../../components/AppHeader';
+import BoxShadow from '../../../components/BoxShadow';
+import AppKeyboardAvoidingView from '../../../components/AppKeyboardAvoidingView';
 
 const OfferRide = () => {
   const navigation = useNavigation();
-  const [from, setFrom] = useState('Downtown Plaza');
-  const [to, setTo] = useState('Tech Park');
-  const [rideDate, setRideDate] = useState(new Date('2025-05-24T07:45:00'));
-  const [rideTime, setRideTime] = useState(new Date('2025-05-24T07:45:00'));
-  const [seats, setSeats] = useState('3');
-  const [make, setMake] = useState('Toyota');
-  const [model, setModel] = useState('Camry');
-  const [color, setColor] = useState('Silver');
-  const [plate, setPlate] = useState('ABC123');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [rideDate, setRideDate] = useState(null);
+  const [rideTime, setRideTime] = useState(null);
+  const [seats, setSeats] = useState('');
+  const [make, setMake] = useState('');
+  const [model, setModel] = useState('');
+  const [color, setColor] = useState('');
+  const [plate, setPlate] = useState('');
   const [iosPickerState, setIosPickerState] = useState({
     visible: false,
     mode: 'date',
@@ -72,11 +76,12 @@ const OfferRide = () => {
   };
 
   const openPicker = type => {
-    const currentValue = type === 'date' ? rideDate : rideTime;
+    const currentValue = (type === 'date' ? rideDate : rideTime) || new Date();
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
         mode: type,
         value: currentValue,
+        minimumDate: type === 'date' ? new Date() : undefined,
         is24Hour: false,
         onChange: (event, selectedDate) => {
           if (event.type !== 'set' || !selectedDate) {
@@ -121,96 +126,84 @@ const OfferRide = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        style={{ flex: 1 }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <SVGXml icon={AppIcons.arrowLeft} width={20} height={20} />
-          </TouchableOpacity>
-          <View style={{ flex: 1, alignItems: 'center' }}>
-            <AppText title="Offer a Ride" textColor={AppColors.BLACK} textFontWeight textSize={2.1} />
-            <AppText
-              title="Fill in the details of your upcoming trip"
-              textColor={AppColors.DARKGRAY}
-              textSize={1.4}
-            />
-          </View>
-          <View style={{ width: responsiveWidth(10) }} />
-        </View>
-
-        <View style={styles.formCard}>
-          <SectionHeading label="Route" icon={AppIcons.location} />
+    <Wrapper bgColor={AppColors.grayBG} >
+      <AppHeader title='Offer a Ride' description={`Fill in the details of your upcoming trip`} />
+      <AppKeyboardAvoidingView isScrollable={true} contentContainerStyle={styles.keyboardScrollContent}>
+        <BoxShadow scroll={false} style={styles.formCard}        >
           <View style={styles.formGroup}>
-            <AppText title="Origin" textColor={AppColors.BLACK} textSize={1.6} />
+            <SectionHeading label="Route" icon={AppIcons.location} />
+            <AppText title="Origin" textColor={AppColors.BLACK} textSize={1.8} textFontWeight />
             <AppTextInput
               value={from}
               onChangeText={setFrom}
+              inputPlaceHolder="Enter origin"
               containerBg={styles.inputBg.backgroundColor}
               borderColor="transparent"
               borderWidth={1}
               inputWidth={90}
             />
-          </View>
-          <View style={styles.formGroup}>
-            <AppText title="Destination" textColor={AppColors.BLACK} textSize={1.6} />
-            <AppTextInput
-              value={to}
-              onChangeText={setTo}
-              containerBg={styles.inputBg.backgroundColor}
-              borderColor="transparent"
-              borderWidth={1}
-              inputWidth={90}
-            />
-          </View>
-
-          <SectionHeading label="Schedule" iconColor="#0D7CF4" icon={AppIcons.calendar} />
-          <View style={styles.inlineRow}>
-            <View style={{ flex: 1 }}>
-              <AppText title="Date" textColor={AppColors.BLACK} textSize={1.6} />
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => openPicker('date')}
-                style={styles.touchableField}
-              >
-                <AppTextInput
-                  value={formatDate(rideDate)}
-                  containerBg={styles.inputBg.backgroundColor}
-                  borderColor="transparent"
-                  borderWidth={1}
-                  inputWidth={42}
-                  editable={false}
-                />
-              </TouchableOpacity>
-            </View>
-            <View style={{ flex: 1 }}>
-              <AppText title="Time" textColor={AppColors.BLACK} textSize={1.6} />
-              <TouchableOpacity
-                activeOpacity={0.85}
-                onPress={() => openPicker('time')}
-                style={styles.touchableField}
-              >
-                <AppTextInput
-                  value={formatTime(rideTime)}
-                  containerBg={styles.inputBg.backgroundColor}
-                  borderColor="transparent"
-                  borderWidth={1}
-                  inputWidth={42}
-                  editable={false}
-                />
-              </TouchableOpacity>
+            <View style={styles.formGroup}>
+              <AppText title="Destination" textColor={AppColors.BLACK} textSize={1.8} textFontWeight />
+              <AppTextInput
+                value={to}
+                onChangeText={setTo}
+                inputPlaceHolder="Enter destination"
+                containerBg={styles.inputBg.backgroundColor}
+                borderColor="transparent"
+                borderWidth={1}
+                inputWidth={90}
+              />
             </View>
           </View>
-
-          <SectionHeading label="Available Seats" iconColor="#0D7CF4" icon={AppIcons.users} />
           <View style={styles.formGroup}>
-            <AppText title="Seats" textColor={AppColors.BLACK} textSize={1.6} />
+            <SectionHeading label="Schedule" iconColor="#0D7CF4" icon={AppIcons.calendar} />
+            <View style={styles.inlineRow}>
+              <View style={{ flex: 1, gap: responsiveWidth(1), }}>
+                <AppText title="Date" textColor={AppColors.BLACK} textSize={1.8} textFontWeight />
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => openPicker('date')}
+                  style={styles.touchableField}
+                >
+                  <AppTextInput
+                    value={rideDate ? formatDate(rideDate) : ''}
+                    inputPlaceHolder="Select Date"
+                    containerBg={styles.inputBg.backgroundColor}
+                    borderColor="transparent"
+                    borderWidth={1}
+                    inputWidth={42}
+                    editable={false}
+                  />
+                </TouchableOpacity>
+              </View>
+              <View style={{ flex: 1, gap: responsiveWidth(1), }}>
+                <AppText title="Time" textColor={AppColors.BLACK} textSize={1.8} textFontWeight />
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  onPress={() => openPicker('time')}
+                  style={styles.touchableField}
+                >
+                  <AppTextInput
+                    value={rideTime ? formatTime(rideTime) : ''}
+                    inputPlaceHolder="Select Time"
+                    containerBg={styles.inputBg.backgroundColor}
+                    borderColor="transparent"
+                    borderWidth={1}
+                    inputWidth={42}
+                    editable={false}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.formGroup}>
+            <SectionHeading label="Available Seats" iconColor="#0D7CF4" icon={AppIcons.users} />
+            <AppText title="Seats" textColor={AppColors.BLACK} textSize={1.8} textFontWeight />
             <AppTextInput
               value={seats}
               onChangeText={setSeats}
+              inputPlaceHolder="Enter seats"
               containerBg={styles.inputBg.backgroundColor}
               borderColor="transparent"
               borderWidth={1}
@@ -218,143 +211,120 @@ const OfferRide = () => {
               keyboardType="numeric"
             />
           </View>
-
-          <SectionHeading label="Car Information" iconColor="#0D7CF4" icon={AppIcons.car} />
-          <View style={styles.inlineRow}>
-            <View style={{ flex: 1 }}>
-              <AppText title="Make" textColor={AppColors.BLACK} textSize={1.6} />
-              <AppTextInput
-                value={make}
-                onChangeText={setMake}
-                containerBg={styles.inputBg.backgroundColor}
-                borderColor="transparent"
-                borderWidth={1}
-                inputWidth={42}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <AppText title="Model" textColor={AppColors.BLACK} textSize={1.6} />
-              <AppTextInput
-                value={model}
-                onChangeText={setModel}
-                containerBg={styles.inputBg.backgroundColor}
-                borderColor="transparent"
-                borderWidth={1}
-                inputWidth={42}
-              />
-            </View>
-          </View>
-          <View style={styles.inlineRow}>
-            <View style={{ flex: 1 }}>
-              <AppText title="Color" textColor={AppColors.BLACK} textSize={1.6} />
-              <AppTextInput
-                value={color}
-                onChangeText={setColor}
-                containerBg={styles.inputBg.backgroundColor}
-                borderColor="transparent"
-                borderWidth={1}
-                inputWidth={42}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <AppText title="License Plate" textColor={AppColors.BLACK} textSize={1.6} />
-              <AppTextInput
-                value={plate}
-                onChangeText={setPlate}
-                containerBg={styles.inputBg.backgroundColor}
-                borderColor="transparent"
-                borderWidth={1}
-                inputWidth={42}
-              />
-            </View>
-          </View>
-        </View>
-
-        <AppButton
-          title="Post Ride"
-          bgColor={AppColors.BLACK}
-          handlePress={() => null}
-          buttoWidth={90}
-          borderRadius={16}
-          textSize={1.9}
-          loading={false}
-          loaderSize="small"
-        />
-
-        {Platform.OS === 'ios' && (
-          <Modal
-            animationType="slide"
-            transparent
-            visible={iosPickerState.visible}
-            onRequestClose={handleIosCancel}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.pickerSheet}>
-                <View style={styles.pickerActions}>
-                  <TouchableOpacity onPress={handleIosCancel}>
-                    <AppText title="Cancel" textColor={AppColors.DARKGRAY} textSize={1.6} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleIosConfirm}>
-                    <AppText title="Done" textColor={AppColors.ThemeColor} textFontWeight textSize={1.6} />
-                  </TouchableOpacity>
-                </View>
-                <DateTimePicker
-                  value={iosPickerState.value}
-                  mode={iosPickerState.mode}
-                  display="spinner"
-                  onChange={handleIosChange}
-                  style={{ backgroundColor: AppColors.WHITE }}
-                  textColor={AppColors.BLACK}
+          <View style={styles.formGroup}>
+            <SectionHeading label="Car Information" iconColor="#0D7CF4" icon={AppIcons.car} />
+            <View style={styles.inlineRow}>
+              <View style={{ flex: 1, gap: responsiveWidth(1), }}>
+                <AppText title="Make" textColor={AppColors.BLACK} textSize={1.8} textFontWeight />
+                <AppTextInput
+                  value={make}
+                  onChangeText={setMake}
+                  inputPlaceHolder="Enter make"
+                  containerBg={styles.inputBg.backgroundColor}
+                  borderColor="transparent"
+                  borderWidth={1}
+                  inputWidth={42}
+                />
+              </View>
+              <View style={{ flex: 1, gap: responsiveWidth(1), }}>
+                <AppText title="Model" textColor={AppColors.BLACK} textSize={1.8} textFontWeight />
+                <AppTextInput
+                  value={model}
+                  onChangeText={setModel}
+                  inputPlaceHolder="Enter model"
+                  containerBg={styles.inputBg.backgroundColor}
+                  borderColor="transparent"
+                  borderWidth={1}
+                  inputWidth={42}
                 />
               </View>
             </View>
-          </Modal>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+            <View style={styles.inlineRow}>
+              <View style={{ flex: 1, gap: responsiveWidth(1), }}>
+                <AppText title="Color" textColor={AppColors.BLACK} textSize={1.8} textFontWeight />
+                <AppTextInput
+                  value={color}
+                  onChangeText={setColor}
+                  inputPlaceHolder="Enter color"
+                  containerBg={styles.inputBg.backgroundColor}
+                  borderColor="transparent"
+                  borderWidth={1}
+                  inputWidth={42}
+                />
+              </View>
+              <View style={{ flex: 1, gap: responsiveWidth(1), }}>
+                <AppText title="License Plate" textColor={AppColors.BLACK} textSize={1.8} textFontWeight />
+                <AppTextInput
+                  value={plate}
+                  onChangeText={setPlate}
+                  inputPlaceHolder="Enter license plate"
+                  containerBg={styles.inputBg.backgroundColor}
+                  borderColor="transparent"
+                  borderWidth={1}
+                  inputWidth={42}
+                />
+              </View>
+            </View>
+          </View>
+
+          <AppButton
+            title="Post Ride"
+            bgColor={AppColors.BLACK}
+            handlePress={() => null}
+            textSize={2}
+            loading={false}
+            loaderSize="small"
+          />
+        </BoxShadow>
+      </AppKeyboardAvoidingView>
+      {Platform.OS === 'ios' && (
+        <Modal
+          animationType="slide"
+          transparent
+          visible={iosPickerState.visible}
+          onRequestClose={handleIosCancel}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.pickerSheet}>
+              <View style={styles.pickerActions}>
+                <TouchableOpacity onPress={handleIosCancel}>
+                  <AppText title="Cancel" textColor={AppColors.DARKGRAY} textSize={1.6} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleIosConfirm}>
+                  <AppText title="Done" textColor={AppColors.ThemeColor} textFontWeight textSize={1.6} />
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={iosPickerState.value}
+                mode={iosPickerState.mode}
+                minimumDate={iosPickerState.mode === 'date' ? new Date() : undefined}
+                display="spinner"
+                onChange={handleIosChange}
+                style={{ backgroundColor: AppColors.WHITE }}
+                textColor={AppColors.BLACK}
+              />
+            </View>
+          </View>
+        </Modal>
+      )}
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F4F7FB',
-  },
-  scrollContent: {
-    paddingHorizontal: responsiveWidth(5),
-    paddingVertical: responsiveHeight(3),
-    gap: responsiveHeight(2.5),
-    paddingBottom: responsiveHeight(4),
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    width: responsiveWidth(10),
-    height: responsiveWidth(10),
-    borderRadius: responsiveWidth(5),
-    backgroundColor: AppColors.WHITE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
-  },
   formCard: {
     backgroundColor: AppColors.WHITE,
-    borderRadius: 24,
-    padding: responsiveWidth(4),
-    gap: responsiveHeight(1.6),
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
+    borderRadius: responsiveWidth(4),
+    paddingHorizontal: responsiveWidth(3),
+    paddingVertical: responsiveWidth(4),
+    gap: responsiveHeight(2),
+  },
+  keyboardScrollContent: {
+    paddingVertical: responsiveHeight(2),
+    paddingBottom: responsiveHeight(4),
   },
   formGroup: {
-    gap: responsiveHeight(1),
+    gap: responsiveWidth(1),
   },
   inlineRow: {
     flexDirection: 'row',
@@ -370,9 +340,9 @@ const styles = StyleSheet.create({
     marginBottom: responsiveHeight(0.5),
   },
   headingIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: responsiveWidth(8),
+    height: responsiveWidth(8),
+    borderRadius: responsiveWidth(8),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#E5F1FF',
@@ -403,9 +373,11 @@ const styles = StyleSheet.create({
 
 const SectionHeading = ({ label, iconColor = '#0D7CF4', icon }) => (
   <View style={styles.headingRow}>
-    <View style={styles.headingIcon}>
+    <View
+    // style={styles.headingIcon}
+    >
       {icon ? (
-        <SVGXml icon={icon} width={18} height={18} />
+        <SVGXml icon={icon} width={responsiveWidth(6)} height={responsiveWidth(6)} />
       ) : (
         <View
           style={{
@@ -417,7 +389,7 @@ const SectionHeading = ({ label, iconColor = '#0D7CF4', icon }) => (
         />
       )}
     </View>
-    <AppText title={label} textColor={iconColor} textFontWeight textSize={1.6} />
+    <AppText title={label} textColor={iconColor} textFontWeight textSize={1.9} />
   </View>
 );
 
