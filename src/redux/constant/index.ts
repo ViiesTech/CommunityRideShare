@@ -1,5 +1,7 @@
 export const baseUrl: string = 'https://communityrideshare.apiforapp.link/';
 
+export const GOOGLE_MAPS_API_KEY: string = 'AIzaSyBo9dxkNGicZXZnwVMNVqkmye720rzmMRQ';
+
 interface Endpoints {
   register: string;
   verifyAccount: string;
@@ -17,6 +19,10 @@ interface Endpoints {
   cancelCommunityRequest: string;
   joinCommunityByCode: string;
   manageJoinRequest: string;
+  searchRides: string;
+  offerRide: string;
+  getMyRides: string;
+  bookRide: string;
 }
 
 export const endpoints: Endpoints = {
@@ -35,5 +41,9 @@ export const endpoints: Endpoints = {
   joinCommunityRequest: 'api/v1/community/:communityId/request',
   cancelCommunityRequest: 'api/v1/community/:communityId/request',
   joinCommunityByCode: 'api/v1/community/join',
-  manageJoinRequest: 'api/v1/community/:communityId/requests/:targetUserId'
+  manageJoinRequest: 'api/v1/community/:communityId/requests/:targetUserId',
+  searchRides: 'api/v1/rides/search',
+  offerRide: 'api/v1/rides',
+  getMyRides: 'api/v1/rides/my',
+  bookRide: 'api/v1/rides/:rideId/book',
 };

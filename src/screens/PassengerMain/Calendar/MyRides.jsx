@@ -1,272 +1,199 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  SafeAreaView,
-  ScrollView,
+  FlatList,
+  RefreshControl,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppText from '../../../components/AppText';
 import AppColors from '../../../utils/AppColors';
 import {
   responsiveHeight,
   responsiveWidth,
 } from '../../../utils/Responsive_Dimensions';
-import SVGXml from '../../../components/SVGXML';
-import { AppIcons } from '../../../assets/icons';
 import RideCard from '../../../components/RideCard';
-
-const rideTemplate = {
-  rating: '5.0',
-  level: 'Level 1 Rider',
-  email: 'leilaniangel@gmail.com',
-  phone: '+12 345 6789',
-  carType: 'Honda HRV',
-  seats: '3/4 Seats Available',
-  departure: 'Mon, Jan 15, 9:30 AM',
-  status: 'Departing Soon',
-  stops: [
-    {
-      label: 'Mall Central',
-      accent: '#0AA64F',
-      icon: AppIcons.locationGreen,
-    },
-    {
-      label: 'University Campus',
-      accent: '#FF4D4D',
-      icon: AppIcons.locationRed,
-    },
-  ],
-  avatar: 'https://i.pravatar.cc/150?img=32',
-};
-
-const offeringRides = [
-  {
-    ...rideTemplate,
-    id: 'offer-1',
-    name: 'John Smith',
-    badge: 'Active',
-  },
-];
-
-const pendingRequests = [
-  {
-    ...rideTemplate,
-    id: 'pending-1',
-    name: 'John Smith',
-    badge: 'Pending',
-  },
-];
-
-const tabs = [
-  { key: 'upcoming', label: 'Upcoming', count: offeringRides.length + pendingRequests.length },
-  { key: 'completed', label: 'Completed', count: 0 },
-  { key: 'cancelled', label: 'Cancelled', count: 0 },
-];
-
-const buildInitialStops = rides => {
-  const map = {};
-  rides.forEach(ride => {
-    map[ride.id] = ride.stops.map(stop => stop.label);
-  });
-  return map;
-};
+import RideCardSkeleton from '../../../components/RideCardSkeleton';
+import Wrapper from '../../../components/Wrapper';
+import AppHeader from '../../../components/AppHeader';
+import { useLazyGetMyRidesQuery } from '../../../redux/api/apiSlice';
 
 const MyRides = () => {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [rideStops, setRideStops] = useState(() =>
-    buildInitialStops([...offeringRides, ...pendingRequests]),
-  );
-  const handleRidePress = () => navigation.navigate('RiderDetail');
+  const [rides, setRides] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalRides, setTotalRides] = useState(0);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const visibleSections = useMemo(() => {
-    if (activeTab !== 'upcoming') {
-      return { offering: [], pending: [] };
+  const [triggerGetMyRides, { isLoading, isFetching }] = useLazyGetMyRidesQuery();
+
+  const fetchRides = useCallback(async (pageNum = 1, isRefresh = false) => {
+    try {
+      if (isRefresh) setIsRefreshing(true);
+      else if (pageNum > 1) setIsFetchingMore(true);
+
+      const res = await triggerGetMyRides({
+        role: 'all',
+        status: activeTab,
+        page: pageNum,
+        limit: 10,
+      }).unwrap();
+
+      const newRides = res?.data?.rides || [];
+      const pagination = res?.data?.pagination || {};
+
+      if (pageNum === 1 || isRefresh) {
+        setRides(newRides);
+      } else {
+        setRides(prev => {
+          const existingIds = new Set(prev.map(r => r.id || r._id));
+          const uniqueNew = newRides.filter(r => !existingIds.has(r.id || r._id));
+          return [...prev, ...uniqueNew];
+        });
+      }
+
+      setHasMore(Boolean(pagination.hasMore));
+      setTotalRides(pagination.total || newRides.length);
+      setPage(pageNum);
+    } catch (err) {
+      console.log('=== GET MY RIDES ERROR ===', err);
+    } finally {
+      setIsFetchingMore(false);
+      setIsRefreshing(false);
     }
-    return { offering: offeringRides, pending: pendingRequests };
-  }, [activeTab]);
+  }, [activeTab, triggerGetMyRides]);
 
-  const handleStopChange = (rideId, stopIndex, value) => {
-    setRideStops(prev => ({
-      ...prev,
-      [rideId]: prev[rideId].map((label, index) =>
-        index === stopIndex ? value : label,
-      ),
-    }));
-  };
+  useEffect(() => {
+    setRides([]);
+    setPage(1);
+    setHasMore(false);
+    fetchRides(1);
+  }, [activeTab, fetchRides]);
+
+  const handleRefresh = useCallback(() => {
+    fetchRides(1, true);
+  }, [fetchRides]);
+
+  const loadMoreRides = useCallback(() => {
+    if (!hasMore || isFetching || isLoading || isFetchingMore) return;
+    fetchRides(page + 1);
+  }, [hasMore, isFetching, isLoading, isFetchingMore, page, fetchRides]);
+
+  const tabs = [
+    { key: 'upcoming', label: 'Upcoming' },
+    { key: 'completed', label: 'Completed' },
+    { key: 'cancelled', label: 'Cancelled' },
+  ];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: insets.bottom + responsiveHeight(10) },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.titleBlock}>
-          <View style={styles.headerRow}>
+    <Wrapper style={styles.safeArea}>
+      <AppHeader title="My Rides" description="Manage your offered and joined rides" />
+
+      <View style={styles.tabRow}>
+        {tabs.map(tab => {
+          const isActive = activeTab === tab.key;
+          return (
             <TouchableOpacity
-              style={styles.headerButton}
-              onPress={() => navigation.goBack()}
+              key={tab.key}
+              style={[styles.tabChip, isActive && styles.tabChipActive]}
+              onPress={() => setActiveTab(tab.key)}
             >
-              <SVGXml icon={AppIcons.arrowLeft} width={20} height={20} />
+              <AppText
+                title={`${tab.label}${isActive ? ` (${totalRides})` : ''}`}
+                textColor={isActive ? AppColors.BLACK : AppColors.GRAY}
+                textFontWeight={isActive}
+                textSize={1.3}
+              />
             </TouchableOpacity>
-            <AppText
-              title="My Rides"
-              textColor={AppColors.BLACK}
-              textFontWeight
-              textSize={2.2}
-            />
-            <View style={{ width: responsiveWidth(10) }} />
-          </View>
-          <AppText
-            title="Manage your offered and joined rides"
-            textColor={AppColors.GRAY}
-            textSize={1.4}
-            textAlignment="center"
-          />
-        </View>
+          );
+        })}
+      </View>
 
-        <View style={styles.tabRow}>
-          {tabs.map(tab => {
-            const isActive = activeTab === tab.key;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                style={[styles.tabChip, isActive && styles.tabChipActive]}
-                onPress={() => setActiveTab(tab.key)}
-              >
+      {(isLoading && rides.length === 0) ? (
+        <View style={styles.skeletonContainer}>
+          <RideCardSkeleton />
+          <RideCardSkeleton />
+        </View>
+      ) : (
+        <FlatList
+          data={rides}
+          keyExtractor={(item, index) => `${item.id || item._id || index}`}
+          renderItem={({ item: ride }) => (
+            <RideCard
+              key={ride.id || ride._id}
+              ride={ride}
+              onRequestPress={() => navigation.navigate('RiderDetail', { ride })}
+            />
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              colors={[AppColors.ThemeColor]}
+              tintColor={AppColors.ThemeColor}
+            />
+          }
+          onEndReached={loadMoreRides}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={
+            isFetchingMore ? (
+              <View style={{ marginTop: responsiveHeight(1) }}>
+                <RideCardSkeleton />
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            !isLoading && !isFetchingMore && (
+              <View style={styles.emptyState}>
                 <AppText
-                  title={`${tab.label} (${tab.count})`}
-                  textColor={isActive ? AppColors.BLACK : AppColors.GRAY}
-                  textFontWeight={isActive}
-                  textSize={1.3}
+                  title={`No ${activeTab} rides found.`}
+                  textColor={AppColors.GRAY}
+                  textSize={1.4}
+                  textAlignment="center"
                 />
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {visibleSections.offering.length > 0 ? (
-          <View style={styles.section}>
-            <AppText
-              title="Rides You're Offering"
-              textColor={AppColors.BLACK}
-              textFontWeight
-              textSize={1.6}
-            />
-            {visibleSections.offering.map(ride => (
-              <RideCard
-                key={ride.id}
-                ride={ride}
-                stopValues={rideStops[ride.id]}
-                onStopChange={(index, value) => handleStopChange(ride.id, index, value)}
-                onRequestPress={handleRidePress}
-                actionLabel="Active"
-                actionColor="#39C46A"
-                actionButtonWidth={65}
-              />
-            ))}
-          </View>
-        ) : null}
-
-        {visibleSections.pending.length > 0 ? (
-          <View style={styles.section}>
-            <AppText
-              title="Pending Requests"
-              textColor={AppColors.BLACK}
-              textFontWeight
-              textSize={1.6}
-            />
-            {visibleSections.pending.map(ride => (
-              <RideCard
-                key={ride.id}
-                ride={ride}
-                stopValues={rideStops[ride.id]}
-                onStopChange={(index, value) => handleStopChange(ride.id, index, value)}
-                onRequestPress={handleRidePress}
-                actionLabel="Review request"
-                actionColor={AppColors.ThemeColor}
-                actionButtonWidth={65}
-              />
-            ))}
-          </View>
-        ) : null}
-
-        {visibleSections.offering.length === 0 && visibleSections.pending.length === 0 && (
-          <View style={styles.emptyState}>
-            <AppText
-              title="No rides in this filter yet."
-              textColor={AppColors.GRAY}
-              textSize={1.3}
-              textAlignment="center"
-            />
-          </View>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+              </View>
+            )
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          ItemSeparatorComponent={() => <View style={{ height: responsiveHeight(1.5) }} />}
+        />
+      )}
+    </Wrapper>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: '#F4F6FB',
-  },
-  scrollContent: {
-    paddingHorizontal: responsiveWidth(5),
-    paddingVertical: responsiveHeight(2.5),
-    gap: responsiveHeight(2.4),
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  titleBlock: {
-    gap: responsiveHeight(0.3),
-    marginBottom: responsiveHeight(1.2),
-  },
-  headerButton: {
-    width: responsiveWidth(10),
-    height: responsiveWidth(10),
-    borderRadius: responsiveWidth(5),
-    backgroundColor: AppColors.WHITE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 4 },
+    backgroundColor: AppColors.grayBG,
   },
   tabRow: {
     flexDirection: 'row',
-    backgroundColor: '#EFF2FA',
-    borderRadius: 24,
-    padding: 4,
-    gap: 6,
+    backgroundColor: AppColors.disable,
+    padding: responsiveWidth(1),
+    borderRadius: responsiveWidth(5.5),
+    marginBottom: responsiveHeight(1.5),
   },
   tabChip: {
     flex: 1,
-    borderRadius: 20,
-    paddingVertical: responsiveHeight(0.8),
+    paddingVertical: responsiveWidth(2.5),
     alignItems: 'center',
   },
   tabChipActive: {
     backgroundColor: AppColors.WHITE,
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
+    borderRadius: responsiveWidth(5),
   },
-  section: {
-    gap: responsiveHeight(1.8),
+  skeletonContainer: {
+    gap: responsiveHeight(2),
+    paddingTop: responsiveHeight(1),
+  },
+  listContent: {
+    paddingBottom: responsiveHeight(1),
+    paddingTop: responsiveHeight(0.5),
   },
   emptyState: {
     paddingVertical: responsiveHeight(6),

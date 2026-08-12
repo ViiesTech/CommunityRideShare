@@ -1,17 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import moment from 'moment';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import AppText from './AppText';
 import AppTextInput from './AppTextInput';
 import AppButton from './AppButton';
 import SVGXml from './SVGXML';
 import { AppIcons } from '../assets/icons';
 import AppColors from '../utils/AppColors';
+import LocationMapModal from './LocationMapModal';
 import {
   responsiveHeight,
   responsiveWidth,
 } from '../utils/Responsive_Dimensions';
 
-const noop = () => {};
+const noop = () => { };
 
 const RideCard = ({
   ride,
@@ -22,57 +25,123 @@ const RideCard = ({
   actionLabel = 'Request to join',
   actionColor = AppColors.BLACK,
   actionTextColor = AppColors.WHITE,
-  actionButtonWidth = 65,
+  actionButtonWidth = 45,
   showChatButton = true,
+  userPickupCoords = null,
+  userPickupAddress = '',
+  loading = false,
+  disabled = false,
 }) => {
+  const [routeModalVisible, setRouteModalVisible] = useState(false);
+
   if (!ride) {
     return null;
   }
+
+  const originCoordsObj =
+    ride?.origin?.coordinates && ride.origin.coordinates.length === 2
+      ? { latitude: ride.origin.coordinates[1], longitude: ride.origin.coordinates[0] }
+      : null;
+
+  const destinationCoordsObj =
+    ride?.destination?.coordinates && ride.destination.coordinates.length === 2
+      ? { latitude: ride.destination.coordinates[1], longitude: ride.destination.coordinates[0] }
+      : null;
+
+  // Compute dynamic button title, colors, and disabled state based on booking status
+  const getActionButtonConfig = () => {
+    const hasRequested = ride?.hasRequested;
+    const status = ride?.bookingStatus;
+
+    if (ride?.role === 'driver') {
+      return {
+        title: 'Offering',
+        bgColor: '#39C46A',
+        textColor: AppColors.WHITE,
+        isDisabled: true,
+      };
+    }
+
+    if (hasRequested || status) {
+      if (status === 'pending') {
+        return {
+          title: 'Requested',
+          bgColor: '#64748B',
+          textColor: AppColors.WHITE,
+          isDisabled: true,
+        };
+      }
+      if (status === 'approved') {
+        return {
+          title: 'Joined',
+          bgColor: '#10B981',
+          textColor: AppColors.WHITE,
+          isDisabled: true,
+        };
+      }
+      if (status === 'rejected') {
+        return {
+          title: 'Request Rejected',
+          bgColor: '#EF4444',
+          textColor: AppColors.WHITE,
+          isDisabled: true,
+        };
+      }
+    }
+
+    return {
+      title: actionLabel,
+      bgColor: actionColor,
+      textColor: actionTextColor,
+      isDisabled: false,
+    };
+  };
+
+  const buttonConfig = getActionButtonConfig();
 
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.profileColumn}>
-          <Image source={{ uri: ride.avatar }} style={styles.avatar} />
+          <Image source={{ uri: ride?.driver?.avatarUrl }} style={styles.avatar} />
           <View style={styles.ratingRow}>
             <View style={styles.starCircle}>
               <SVGXml icon={AppIcons.starFilled} width={18} height={18} />
             </View>
-            <AppText title={ride.rating} textColor={AppColors.WHITE} textFontWeight textSize={1.5} />
+            <AppText title={ride?.driver?.averageRating} textColor={AppColors.WHITE} textFontWeight textSize={1.5} />
           </View>
         </View>
         <View style={styles.headerContent}>
           <View style={styles.headerTop}>
             <View style={styles.nameRow}>
-              <AppText title={ride.name} textColor={AppColors.WHITE} textFontWeight textSize={1.8} />
-              <AppText title={`(${ride.level})`} textColor="rgba(255,255,255,0.85)" textSize={1.2} />
+              <AppText title={ride.driver.name} textColor={AppColors.WHITE} textFontWeight textSize={1.8} />
             </View>
-            {!!ride.badge && (
-              <View style={styles.badge}>
-                <AppText title={ride.badge} textColor={AppColors.WHITE} textSize={1.1} textFontWeight />
-              </View>
-            )}
           </View>
-          <AppText title={ride.email} textColor={AppColors.WHITE} textSize={1.3} />
-          <AppText title={`Phone : ${ride.phone}`} textColor={AppColors.WHITE} textSize={1.3} />
+          <AppText title={ride?.driver?.email} textColor={AppColors.WHITE} textSize={1.3} />
+          <AppText title={`Phone : ${ride?.driver?.phone}`} textColor={AppColors.WHITE} textSize={1.3} />
         </View>
       </View>
 
-      <View style={styles.infoLine}>
-        <AppText title="Car Type" textColor={AppColors.GRAY} textSize={1.3} />
-        <AppText title={ride.carType} textColor={AppColors.BLACK} textFontWeight textSize={1.45} />
-      </View>
-      <View style={styles.infoLine}>
-        <AppText title="Car Seat" textColor={AppColors.GRAY} textSize={1.3} />
-        <AppText title={ride.seats} textColor={AppColors.BLACK} textFontWeight textSize={1.45} />
-      </View>
-      <View style={styles.timeInline}>
-        <AppText title="Time & Date" textColor={AppColors.GRAY} textSize={1.3} />
-        <View style={styles.timeValue}>
-          <AppText title={ride.departure} textColor={AppColors.BLACK} textFontWeight textSize={1.45} />
-          {ride.status && (
-            <AppText title={`- ${ride.status}`} textColor={AppColors.ThemeColor} textFontWeight textSize={1.3} />
-          )}
+      <View style={styles.infoLineContainer}>
+        <View style={styles.infoLine}>
+          <AppText title="Model" textColor={AppColors.GRAY} textSize={1.6} textFontWeight />
+          <AppText title={(ride?.vehicle?.make || ride?.vehicle?.model) ? `${ride?.vehicle?.make || ''} ${ride?.vehicle?.model || ''}`.trim() : 'N/A'} textColor={AppColors.BLACK} textSize={1.5} />
+        </View>
+        <View style={styles.infoLine}>
+          <AppText title="Color" textColor={AppColors.GRAY} textSize={1.6} textFontWeight />
+          <AppText title={ride?.vehicle?.color || 'N/A'} textColor={AppColors.BLACK} textSize={1.5} />
+        </View>
+        <View style={styles.infoLine}>
+          <AppText title="License Plate" textColor={AppColors.GRAY} textSize={1.6} textFontWeight />
+          <AppText title={ride?.vehicle?.licensePlate || 'N/A'} textColor={AppColors.BLACK} textSize={1.5} />
+        </View>
+        <View style={styles.infoLine}>
+          <AppText title="Seats" textColor={AppColors.GRAY} textSize={1.6} textFontWeight />
+          <AppText title={(ride?.availableSeats !== undefined && ride?.totalSeats !== undefined) ? `${ride.availableSeats}/${ride.totalSeats} Seats Available` : 'N/A'} textColor={AppColors.BLACK} textSize={1.5} />
+        </View>
+        <View style={styles.infoLine}>
+          <AppText title="Departure Time" textColor={AppColors.GRAY} textSize={1.6} textFontWeight />
+          <AppText title={ride?.departureTime ? moment(ride.departureTime).format('D-MMM-YYYY h:mm A') : 'N/A'} textColor={AppColors.BLACK} textSize={1.5} />
         </View>
       </View>
 
@@ -83,52 +152,63 @@ const RideCard = ({
           <View style={styles.routeDot} />
         </View>
         <View style={styles.stopList}>
-          {ride.stops.map((stop, index) => (
-            <View key={`${ride.id}-${stop.label}`} style={styles.stopItem}>
-              <AppTextInput
-                inputPlaceHolder={stop.label}
-                value={stopValues[index] ?? ''}
-                onChangeText={value => onStopChange(index, value)}
-                placeholderTextColor={AppColors.BLACK}
-                borderRadius={16}
-                containerBg="#F7F9FD"
-                borderWidth={-1}
-                inputWidth={48}
-                textAlign="left"
-                rightIcon={(
-                  <View style={styles.stopActions}>
-                    <TouchableOpacity style={[styles.stopActionIcon, styles.searchAction]}>
-                      <SVGXml icon={AppIcons.search} width={16} height={16} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.stopActionIcon, { backgroundColor: `${stop.accent}1A` }]}
-                    >
-                      <SVGXml icon={stop.icon} width={16} height={16} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-              />
-            </View>
-          ))}
+          <View style={styles.stopItem}>
+            <AppText
+              title={ride?.origin?.address || 'N/A'}
+              textColor={AppColors.BLACK}
+              textSize={1.5}
+              numberOfLines={2}
+            />
+          </View>
+          <View style={styles.stopItem}>
+            <AppText
+              title={ride?.destination?.address || 'N/A'}
+              textColor={AppColors.BLACK}
+              textSize={1.5}
+              numberOfLines={2}
+            />
+          </View>
         </View>
       </View>
 
       <View style={styles.actionsRow}>
-        {showChatButton && (
-          <TouchableOpacity style={styles.chatButton} onPress={onChatPress}>
-            <SVGXml icon={AppIcons.chatBlue} width={22} height={22} />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={styles.chatButton}
+          onPress={() => setRouteModalVisible(true)}
+          activeOpacity={0.7}
+        >
+          <FontAwesome5 name="route" size={20} color="#0D7CF4" />
+        </TouchableOpacity>
         <AppButton
-          title={actionLabel}
-          bgColor={actionColor}
-          textColor={actionTextColor}
+          title={buttonConfig.title}
+          bgColor={buttonConfig.bgColor}
+          textColor={buttonConfig.textColor}
           handlePress={onRequestPress}
+          onPressIn={onRequestPress}
+          loading={loading}
+          disabled={disabled || buttonConfig.isDisabled}
           buttoWidth={actionButtonWidth}
-          borderRadius={22}
+          borderRadius={8}
           textSize={1.7}
+          style={{ height: responsiveWidth(11) }}
         />
       </View>
+
+      {/* Full Screen Route Map Modal */}
+      {routeModalVisible && (
+        <LocationMapModal
+          visible={routeModalVisible}
+          mode="route"
+          title="Ride Route Map"
+          originCoords={originCoordsObj}
+          destinationCoords={destinationCoordsObj}
+          userPickupCoords={userPickupCoords}
+          originAddress={ride?.origin?.address || 'Pickup Location'}
+          destinationAddress={ride?.destination?.address || 'Drop-off Location'}
+          userPickupAddress={userPickupAddress || 'Your Selected Pickup Location'}
+          onClose={() => setRouteModalVisible(false)}
+        />
+      )}
     </View>
   );
 };
@@ -138,7 +218,7 @@ const styles = StyleSheet.create({
     backgroundColor: AppColors.WHITE,
     borderRadius: 24,
     padding: responsiveWidth(4),
-    gap: responsiveHeight(2),
+    // gap: responsiveHeight(2),
     shadowColor: '#0F172A',
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -205,6 +285,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  infoLineContainer: {
+    flexDirection: 'column',
+    // justifyContent: 'space-between',
+    gap: responsiveWidth(1),
+    marginVertical: responsiveWidth(2)
+  },
   timeInline: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -219,25 +305,26 @@ const styles = StyleSheet.create({
   },
   routeSection: {
     flexDirection: 'row',
-    gap: responsiveWidth(4),
+    gap: responsiveWidth(2),
     alignItems: 'stretch',
   },
   routeIndicator: {
-    width: 24,
+    width: responsiveWidth(2),
+    // backgroundColor: '#0D7CF4',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: responsiveHeight(1),
+    paddingVertical: responsiveWidth(2),
   },
   routeDotActive: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#E1E6F2',
+    width: responsiveWidth(2),
+    height: responsiveWidth(2),
+    borderRadius: responsiveWidth(4),
+    backgroundColor: AppColors.appBlue,
   },
   routeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: responsiveWidth(2),
+    height: responsiveWidth(2),
+    borderRadius: responsiveWidth(4),
     backgroundColor: '#FF4747',
   },
   routeLine: {
@@ -248,10 +335,10 @@ const styles = StyleSheet.create({
   },
   stopList: {
     flex: 1,
-    gap: responsiveHeight(1.4),
+    gap: responsiveWidth(2.5),
   },
   stopItem: {
-    width: '100%',
+    // width: '100%',
   },
   stopActions: {
     flexDirection: 'row',
@@ -269,19 +356,20 @@ const styles = StyleSheet.create({
   },
   actionsRow: {
     flexDirection: 'row',
-    gap: responsiveWidth(3),
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: responsiveWidth(3)
   },
   chatButton: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    borderWidth: 2,
-    borderColor: '#E0E6F5',
+    width: responsiveWidth(11),
+    height: responsiveWidth(11),
+    borderRadius: responsiveWidth(22),
+    borderWidth: 1,
+    borderColor: AppColors.appBlue,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: AppColors.WHITE,
   },
 });
 
-export default RideCard;
+export default React.memo(RideCard);

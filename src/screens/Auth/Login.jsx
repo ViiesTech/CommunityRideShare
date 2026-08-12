@@ -47,21 +47,21 @@ const Login = () => {
         return showToast('error', 'Login Failed', 'All fields are required');
       }
       const response = await login(state).unwrap();
+      console.log('response', response);
       if (response.success) {
         showToast(
           'success',
           'Congratulations',
-          response?.message || 'Login successful.',
-          () => {
-            const user = response.data.user
-            const token = response.data.token
-            const communityRole = user.communityRole || null
-            const communityId = user.communityId || null
-            dispatch(setCommunityRole(communityRole))
-            dispatch(setCommunityId(communityId))
-            dispatch(setAuthToken(token));
-            dispatch(setUser(user))
-          });
+          response?.message || 'Login successful.'
+        );
+        const user = response.data.user;
+        const token = response.data.token;
+        const communityRole = user.communityRole || null;
+        const communityId = user.communityId || null;
+        dispatch(setCommunityRole(communityRole));
+        dispatch(setCommunityId(communityId));
+        dispatch(setAuthToken(token));
+        dispatch(setUser(user));
       } else {
         showToast(
           'error',

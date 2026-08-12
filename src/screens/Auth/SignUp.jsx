@@ -55,8 +55,8 @@ const SignUp = () => {
         showToast(
           'success',
           'Congratulations',
-          response?.message || 'Account Creation successful.',
-          () => nav.navigate('VerifyAccount', { email: response.data.userEmail || state.email }));
+          response?.message || 'Account Creation successful.',);
+        nav.navigate('VerifyAccount', { email: response.data.userEmail || state.email })
       } else {
         showToast(
           'error',
@@ -87,7 +87,7 @@ const SignUp = () => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         bounces={false}
-        showsVerticalScrollIndicator={false}      
+        showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
         <AppLogo style={{ marginVertical: responsiveHeight(5) }} />
         <View style={styles.card} >

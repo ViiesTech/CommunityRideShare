@@ -32,6 +32,10 @@ type props = {
   textAlign?: any;
   editable?: any;
   paddingVertical?: any;
+  selection?: any;
+  onFocus?: any;
+  onBlur?: any;
+  onSelectionChange?: any;
 };
 const AppTextInput = ({
   logo,
@@ -57,6 +61,10 @@ const AppTextInput = ({
   textAlign,
   editable,
   paddingVertical,
+  selection,
+  onFocus,
+  onBlur,
+  onSelectionChange,
 }: props) => {
   return (
     <View
@@ -97,6 +105,10 @@ const AppTextInput = ({
         multiline={multiline}
         maxLength={maxLength}
         keyboardType={keyboardType}
+        selection={selection}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        onSelectionChange={onSelectionChange}
       />
 
       {rightIcon}

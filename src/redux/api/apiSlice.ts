@@ -9,7 +9,7 @@ export const apiSlice = createApi({
   refetchOnReconnect: true,
   keepUnusedDataFor: 60 * 60, // 1 hour
 
-  tagTypes: ['Community', 'Profile'],
+  tagTypes: ['Community', 'Profile', 'Rides'],
   baseQuery: fetchBaseQuery({
     baseUrl: baseUrl,
     // prepareHeaders is useful for adding the authorization token automatically
@@ -17,7 +17,6 @@ export const apiSlice = createApi({
       // Access the token from the root state
       const state = getState() as any;
       const token = state.auth?.authToken;
-
       if (token) {
         headers.set('authorization', `Bearer ${token}`);
       }
@@ -152,6 +151,36 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Community'],
     }),
+    searchRides: builder.query<any, { lat?: number; lng?: number; maxDistanceMeters?: number; destLat?: number; destLng?: number; maxDropDistanceMeters?: number; communityId?: string; limit?: number; search?: string; cursor?: string }>({
+      query: (params) => ({
+        url: endpoints.searchRides,
+        params,
+      }),
+      providesTags: ['Rides'],
+    }),
+    offerRide: builder.mutation<any, any>({
+      query: (body) => ({
+        url: endpoints.offerRide,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Rides'],
+    }),
+    getMyRides: builder.query<any, { role?: 'driver' | 'passenger' | 'all'; status?: 'upcoming' | 'completed' | 'cancelled'; limit?: number; page?: number }>({
+      query: (params) => ({
+        url: endpoints.getMyRides,
+        params,
+      }),
+      providesTags: ['Rides'],
+    }),
+    bookRide: builder.mutation<any, { rideId: string; pickupLocation?: any; dropoffLocation?: any }>({
+      query: ({ rideId, ...body }) => ({
+        url: endpoints.bookRide.replace(':rideId', rideId),
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['Rides'],
+    }),
   }),
 });
 
@@ -166,5 +195,12 @@ export const { useRegisterMutation,
   useJoinCommunityRequestMutation,
   useCancelCommunityRequestMutation,
   useJoinCommunityByCodeMutation,
-  useManageJoinRequestMutation
+  useManageJoinRequestMutation,
+  useSearchRidesQuery,
+  useLazySearchRidesQuery,
+  useOfferRideMutation,
+  useGetMyRidesQuery,
+  useLazyGetMyRidesQuery,
+  useBookRideMutation,
 } = apiSlice;
+

@@ -25,6 +25,7 @@ type props = {
   borderBottomWidth?: any;
   loading?: boolean,
   loaderSize?: any,
+  disabled?: boolean,
   style?: any,
 };
 const AppButton = ({
@@ -47,28 +48,34 @@ const AppButton = ({
   borderBottomWidth,
   loading,
   loaderSize,
+  disabled,
   style,
 }: props) => {
+  const isBtnDisabled = Boolean(disabled || loading);
   return (
     <TouchableOpacity
+      disabled={isBtnDisabled}
+      delayPressIn={0}
       onPress={handlePress}
       style={[{
         backgroundColor: bgColor ? bgColor : AppColors.BTNCOLOURS,
         alignItems: 'center',
-        justifyContent: leftIcon ? 'center' : 'space-between',
-        padding: padding ? padding : 12,
+        justifyContent: 'center',
+        paddingVertical: padding ? padding : 10,
+        paddingHorizontal: 12,
+        minHeight: responsiveWidth(11),
         borderRadius: borderRadius ? borderRadius : 8,
+        opacity: isBtnDisabled ? 0.9 : 1,
         gap: leftIcon ? 7 : 0,
         width: buttoWidth ? responsiveWidth(buttoWidth) : responsiveWidth(),
         borderWidth: borderWidth,
         borderColor: borderColor,
-        flexDirection: leftIcon ? 'row' : null,
+        flexDirection: 'row',
         elevation: elevation,
         borderBottomWidth: borderBottomWidth,
         borderRightWidth: borderRightWidth,
       }, style]}>
       {leftIcon}
-      <View />
       {loading ? (
         <ActivityIndicator color={textColor} size={loaderSize || 'small'} />
       ) : (

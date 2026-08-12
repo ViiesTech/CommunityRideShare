@@ -161,13 +161,22 @@ const EditProfile = () => {
       const multipart = new FormData();
       const dobISO = dobDate ? moment(dobDate).toISOString() : null;
 
-      multipart.append('name', formData.name);
-      multipart.append('dOB', dobISO);
-      multipart.append('phone', formData.phone);
-      multipart.append('about', formData.about);
+      if (formData.name?.trim()) {
+        multipart.append('name', formData.name.trim());
+      }
+      if (dobISO) {
+        multipart.append('dOB', dobISO);
+      }
+      if (formData.phone?.trim()) {
+        multipart.append('phone', formData.phone.trim());
+      }
+      if (formData.about?.trim()) {
+        multipart.append('about', formData.about.trim());
+      }
       if (avatarFile) {
         multipart.append('avatar', avatarFile);
       }
+
       const response = await updateProfile(multipart).unwrap();
       if (response?.success) {
         dispatch(setUser(response?.data?.user));
@@ -175,7 +184,9 @@ const EditProfile = () => {
           'success',
           'Congratulations',
           response?.message || 'Your profile has been updated successfully.',
-          () => { navigation.goBack() });
+          // () => { navigation.goBack() }
+        )
+        navigation.goBack()
       } else {
         showToast(
           'error',
